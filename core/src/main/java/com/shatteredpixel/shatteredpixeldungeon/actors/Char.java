@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -39,20 +40,28 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Doom;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EarthImbue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FireImbue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FrostImbue;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Speed;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Stamina;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Potential;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfElements;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfPsionicBlast;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfPsionicBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
@@ -61,6 +70,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocki
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.ShockingDart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Door;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -86,7 +96,6 @@ public abstract class Char extends Actor {
 	
 	public int HT;
 	public int HP;
-	public int SHLD;
 	
 	protected float baseSpeed	= 1;
 	protected PathFinder.Path path;
@@ -106,7 +115,7 @@ public abstract class Char extends Actor {
 	
 	public int viewDistance	= 8;
 	
-	protected boolean[] fieldOfView = null;
+	public boolean[] fieldOfView = null;
 	
 	private HashSet<Buff> buffs = new HashSet<>();
 	
@@ -119,11 +128,11 @@ public abstract class Char extends Actor {
 		return false;
 	}
 	
-	private static final String POS			= "pos";
-	private static final String TAG_HP		= "HP";
-	private static final String TAG_HT		= "HT";
-	private static final String TAG_SHLD    = "SHLD";
-	private static final String BUFFS		= "buffs";
+	protected static final String POS       = "pos";
+	protected static final String TAG_HP    = "HP";
+	protected static final String TAG_HT    = "HT";
+	protected static final String TAG_SHLD  = "SHLD";
+	protected static final String BUFFS	    = "buffs";
 	
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -133,7 +142,6 @@ public abstract class Char extends Actor {
 		bundle.put( POS, pos );
 		bundle.put( TAG_HP, HP );
 		bundle.put( TAG_HT, HT );
-		bundle.put( TAG_SHLD, SHLD );
 		bundle.put( BUFFS, buffs );
 	}
 	
@@ -145,18 +153,29 @@ public abstract class Char extends Actor {
 		pos = bundle.getInt( POS );
 		HP = bundle.getInt( TAG_HP );
 		HT = bundle.getInt( TAG_HT );
-		SHLD = bundle.getInt( TAG_SHLD );
 		
 		for (Bundlable b : bundle.getCollection( BUFFS )) {
 			if (b != null) {
 				((Buff)b).attachTo( this );
 			}
 		}
+		
+		//pre-0.7.0
+		if (bundle.contains( "SHLD" )){
+			int legacySHLD = bundle.getInt( "SHLD" );
+			//attempt to find the buff that may have given the shield
+			ShieldBuff buff = buff(Brimstone.BrimstoneShield.class);
+			if (buff != null) legacySHLD -= buff.shielding();
+			if (legacySHLD > 0){
+				BrokenSeal.WarriorShield buff2 = buff(BrokenSeal.WarriorShield.class);
+				if (buff != null) buff2.supercharge(legacySHLD);
+			}
+		}
 	}
 	
 	public boolean attack( Char enemy ) {
 
-		if (enemy == null || !enemy.isAlive()) return false;
+		if (enemy == null) return false;
 		
 		boolean visibleFight = Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[enemy.pos];
 		
@@ -179,11 +198,11 @@ public abstract class Char extends Actor {
 			} else {
 				dmg = damageRoll();
 			}
-			int effectiveDamage = Math.max( dmg - dr, 0 );
 			
+			int effectiveDamage = enemy.defenseProc( this, dmg );
+			effectiveDamage = Math.max( effectiveDamage - dr, 0 );
 			effectiveDamage = attackProc( enemy, effectiveDamage );
-			effectiveDamage = enemy.defenseProc( this, effectiveDamage );
-
+			
 			if (visibleFight) {
 				Sample.INSTANCE.play( Assets.SND_HIT, 1, 1, Random.Float( 0.8f, 1.25f ) );
 			}
@@ -208,6 +227,8 @@ public abstract class Char extends Actor {
 				buff(FireImbue.class).proc(enemy);
 			if (buff(EarthImbue.class) != null)
 				buff(EarthImbue.class).proc(enemy);
+			if (buff(FrostImbue.class) != null)
+				buff(FrostImbue.class).proc(enemy);
 
 			enemy.sprite.bloodBurstA( sprite.center(), effectiveDamage );
 			enemy.sprite.flash();
@@ -276,13 +297,43 @@ public abstract class Char extends Actor {
 	}
 	
 	public float speed() {
-		return buff( Cripple.class ) == null ? baseSpeed : baseSpeed * 0.5f;
+		float speed = baseSpeed;
+		if ( buff( Cripple.class ) != null ) speed /= 2f;
+		if ( buff( Stamina.class ) != null) speed *= 1.5f;
+		if ( buff( Adrenaline.class ) != null) speed *= 2f;
+		if ( buff( Haste.class ) != null) speed *= 3f;
+		return speed;
+	}
+	
+	//used so that buffs(Shieldbuff.class) isn't called every time unnecessarily
+	private int cachedShield = 0;
+	public boolean needsShieldUpdate = true;
+	
+	public int shielding(){
+		if (!needsShieldUpdate){
+			return cachedShield;
+		}
+		
+		cachedShield = 0;
+		for (ShieldBuff s : buffs(ShieldBuff.class)){
+			cachedShield += s.shielding();
+		}
+		needsShieldUpdate = false;
+		return cachedShield;
 	}
 	
 	public void damage( int dmg, Object src ) {
 		
 		if (!isAlive() || dmg < 0) {
 			return;
+		}
+		Terror t = buff(Terror.class);
+		if (t != null){
+			t.recover();
+		}
+		Charm c = buff(Charm.class);
+		if (c != null){
+			c.recover();
 		}
 		if (this.buff(Frost.class) != null){
 			Buff.detach( this, Frost.class );
@@ -302,28 +353,24 @@ public abstract class Char extends Actor {
 		}
 		
 		if (buff( Paralysis.class ) != null) {
-			if (Random.Int( dmg ) >= Random.Int( HP )) {
-				Buff.detach( this, Paralysis.class );
-				if (Dungeon.level.heroFOV[pos]) {
-					GLog.i( Messages.get(Char.class, "out_of_paralysis", name) );
-				}
-			}
+			buff( Paralysis.class ).processDamage(dmg);
 		}
 
+		int shielded = dmg;
 		//FIXME: when I add proper damage properties, should add an IGNORES_SHIELDS property to use here.
-		if (src instanceof Hunger || SHLD == 0){
-			HP -= dmg;
-		} else if (SHLD >= dmg){
-			SHLD -= dmg;
-		} else if (SHLD > 0) {
-			HP -= (dmg - SHLD);
-			SHLD = 0;
+		if (!(src instanceof Hunger)){
+			for (ShieldBuff s : buffs(ShieldBuff.class)){
+				dmg = s.absorbDamage(dmg);
+				if (dmg == 0) break;
+			}
 		}
+		shielded -= dmg;
+		HP -= dmg;
 		
 		sprite.showStatus( HP > HT / 2 ?
 			CharSprite.WARNING :
 			CharSprite.NEGATIVE,
-			Integer.toString( dmg ) );
+			Integer.toString( dmg + shielded ) );
 
 		if (HP < 0) HP = 0;
 
@@ -339,7 +386,7 @@ public abstract class Char extends Actor {
 	
 	public void die( Object src ) {
 		destroy();
-		sprite.die();
+		if (src != Chasm.class) sprite.die();
 	}
 	
 	public boolean isAlive() {
@@ -403,16 +450,17 @@ public abstract class Char extends Actor {
 		buffs.add( buff );
 		Actor.add( buff );
 
-		if (sprite != null)
+		if (sprite != null && buff.announced)
 			switch(buff.type){
 				case POSITIVE:
-					sprite.showStatus(CharSprite.POSITIVE, buff.toString()); break;
+					sprite.showStatus(CharSprite.POSITIVE, buff.toString());
+					break;
 				case NEGATIVE:
-					sprite.showStatus(CharSprite.NEGATIVE, buff.toString());break;
-				case NEUTRAL:
-					sprite.showStatus(CharSprite.NEUTRAL, buff.toString()); break;
-				case SILENT: default:
-					break; //show nothing
+					sprite.showStatus(CharSprite.NEGATIVE, buff.toString());
+					break;
+				case NEUTRAL: default:
+					sprite.showStatus(CharSprite.NEUTRAL, buff.toString());
+					break;
 			}
 
 	}
@@ -443,7 +491,7 @@ public abstract class Char extends Actor {
 		}
 	}
 	
-	public int stealth() {
+	public float stealth() {
 		return 0;
 	}
 	
@@ -545,7 +593,7 @@ public abstract class Char extends Actor {
 	}
 
 	public enum Property{
-		BOSS ( new HashSet<Class>( Arrays.asList(Grim.class, ScrollOfPsionicBlast.class)),
+		BOSS ( new HashSet<Class>( Arrays.asList(Grim.class, ScrollOfRetribution.class, ScrollOfPsionicBlast.class)),
 				new HashSet<Class>( Arrays.asList(Corruption.class) )),
 		MINIBOSS ( new HashSet<Class>(),
 				new HashSet<Class>( Arrays.asList(Corruption.class) )),

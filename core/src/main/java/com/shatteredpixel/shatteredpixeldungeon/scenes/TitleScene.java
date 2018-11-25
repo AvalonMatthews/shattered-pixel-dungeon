@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.BuildConfig;
+import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BannerSprites;
@@ -32,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.ChangesButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.LanguageButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.PrefsButton;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndStartGame;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
@@ -114,7 +117,21 @@ public class TitleScene extends PixelScene {
 		DashboardItem btnPlay = new DashboardItem( Messages.get(this, "play"), 0 ) {
 			@Override
 			protected void onClick() {
-				ShatteredPixelDungeon.switchNoFade( StartScene.class );
+				if (GamesInProgress.checkAll().size() == 0){
+					TitleScene.this.add( new WndStartGame(1) );
+				} else {
+					ShatteredPixelDungeon.switchNoFade( StartScene.class );
+				}
+			}
+			
+			@Override
+			protected boolean onLongClick() {
+				//making it easier to start runs quickly while debugging
+				if (BuildConfig.DEBUG) {
+					TitleScene.this.add( new WndStartGame(1) );
+					return true;
+				}
+				return super.onLongClick();
 			}
 		};
 		add( btnPlay );
@@ -141,7 +158,7 @@ public class TitleScene extends PixelScene {
 
 		BitmapText version = new BitmapText( "v " + Game.version + "", pixelFont);
 		version.measure();
-		version.hardlight( 0xCCCCCC );
+		version.hardlight( 0x888888 );
 		version.x = w - version.width();
 		version.y = h - version.height();
 		add( version );

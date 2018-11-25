@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShaftParticle;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -40,7 +39,7 @@ import com.watabou.utils.Bundle;
 public class Sungrass extends Plant {
 	
 	{
-		image = 4;
+		image = 3;
 	}
 	
 	@Override
@@ -61,7 +60,6 @@ public class Sungrass extends Plant {
 			image = ItemSpriteSheet.SEED_SUNGRASS;
 
 			plantClass = Sungrass.class;
-			alchemyClass = PotionOfHealing.class;
 
 			bones = true;
 		}
@@ -72,12 +70,12 @@ public class Sungrass extends Plant {
 		private static final float STEP = 1f;
 		
 		private int pos;
-		private int healCurr = 1;
-		private int count = 0;
+		private float partialHeal;
 		private int level;
 
 		{
 			type = buffType.POSITIVE;
+			announced = true;
 		}
 		
 		@Override
@@ -85,25 +83,24 @@ public class Sungrass extends Plant {
 			if (target.pos != pos) {
 				detach();
 			}
-			if (count == 5) {
-				if (level <= healCurr*.025*target.HT) {
-					target.HP = Math.min(target.HT, target.HP + level);
-					target.sprite.emitter().burst(Speck.factory(Speck.HEALING), 1);
-					detach();
-				} else {
-					target.HP = Math.min(target.HT, target.HP+(int)(healCurr*.025*target.HT));
-					level -= (healCurr*.025*target.HT);
-					if (healCurr < 6)
-						healCurr ++;
-					target.sprite.emitter().burst(Speck.factory(Speck.HEALING), 1);
+			
+			//for the hero, full heal takes ~50/93/111/120 turns at levels 1/10/20/30
+			partialHeal += (40 + target.HT)/150f;
+			
+			if (partialHeal > 1){
+				target.HP += (int)partialHeal;
+				level -= (int)partialHeal;
+				partialHeal -= (int)partialHeal;
+				target.sprite.emitter().burst(Speck.factory(Speck.HEALING), 1);
+				
+				if (target.HP >= target.HT) {
+					target.HP = target.HT;
+					if (target instanceof Hero){
+						((Hero)target).resting = false;
+					}
 				}
-				if (target.HP == target.HT && target instanceof Hero){
-					((Hero)target).resting = false;
-				}
-				count = 1;
-			} else {
-				count++;
 			}
+			
 			if (level <= 0) {
 				detach();
 			} else {
@@ -113,16 +110,6 @@ public class Sungrass extends Plant {
 			return true;
 		}
 
-		public int absorb( int damage ) {
-			level -= damage;
-			if (level <= 0) {
-				detach();
-			} else {
-				BuffIndicator.refreshHero();
-			}
-			return damage;
-		}
-
 		public void boost( int amount ){
 			level += amount;
 			pos = target.pos;
@@ -130,7 +117,7 @@ public class Sungrass extends Plant {
 		
 		@Override
 		public int icon() {
-			return BuffIndicator.HEALING;
+			return BuffIndicator.HERB_HEALING;
 		}
 		
 		@Override
@@ -149,16 +136,14 @@ public class Sungrass extends Plant {
 		}
 
 		private static final String POS	= "pos";
-		private static final String HEALCURR = "healCurr";
-		private static final String COUNT = "count";
+		private static final String PARTIAL = "partial_heal";
 		private static final String LEVEL = "level";
 
 		@Override
 		public void storeInBundle( Bundle bundle ) {
 			super.storeInBundle( bundle );
 			bundle.put( POS, pos );
-			bundle.put( HEALCURR, healCurr);
-			bundle.put( COUNT, count);
+			bundle.put( PARTIAL, partialHeal);
 			bundle.put( LEVEL, level);
 		}
 		
@@ -166,8 +151,7 @@ public class Sungrass extends Plant {
 		public void restoreFromBundle( Bundle bundle ) {
 			super.restoreFromBundle( bundle );
 			pos = bundle.getInt( POS );
-			healCurr = bundle.getInt( HEALCURR );
-			count = bundle.getInt( COUNT );
+			partialHeal = bundle.getFloat( PARTIAL );
 			level = bundle.getInt( LEVEL );
 
 		}

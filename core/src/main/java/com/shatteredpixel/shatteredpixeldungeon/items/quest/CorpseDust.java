@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,11 +101,15 @@ public class CorpseDust extends Item {
 			if (powerNeeded <= spawnPower){
 				spawnPower -= powerNeeded;
 				int pos = 0;
+				int tries = 20;
 				do{
 					pos = Random.Int(Dungeon.level.length());
-				} while (!Dungeon.level.heroFOV[pos] || !Dungeon.level.passable[pos] || Actor.findChar( pos ) != null);
-				Wraith.spawnAt(pos);
-				Sample.INSTANCE.play(Assets.SND_CURSED);
+					tries --;
+				} while (tries > 0 && (!Dungeon.level.heroFOV[pos] || !Dungeon.level.passable[pos] || Actor.findChar( pos ) != null));
+				if (tries > 0) {
+					Wraith.spawnAt(pos);
+					Sample.INSTANCE.play(Assets.SND_CURSED);
+				}
 			}
 
 			spend(TICK);

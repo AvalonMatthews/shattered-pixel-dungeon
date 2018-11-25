@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,12 +62,12 @@ public class BadgesScene extends PixelScene {
 		add( archs );
 
 		float left = 5;
-		float top = 15;
+		float top = 16;
 
 		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9 );
 		title.hardlight(Window.TITLE_COLOR);
-		title.x = (w - title.width()) / 2 ;
-		title.y = (top - title.baseLine()) / 2 ;
+		title.x = (w - title.width()) / 2f;
+		title.y = (top - title.baseLine()) / 2f;
 		align(title);
 		add(title);
 
@@ -75,7 +75,7 @@ public class BadgesScene extends PixelScene {
 
 		List<Badges.Badge> badges = Badges.filtered( true );
 
-		int blankBadges = 34;
+		int blankBadges = 33;
 		blankBadges -= badges.size();
 		if (badges.contains(Badges.Badge.ALL_ITEMS_IDENTIFIED))	blankBadges -= 6;
 		if (badges.contains(Badges.Badge.YASD)) 				blankBadges -= 5;

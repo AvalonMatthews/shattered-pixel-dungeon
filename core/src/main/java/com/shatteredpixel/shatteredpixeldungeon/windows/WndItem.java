@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,13 +36,16 @@ import java.util.Collections;
 import java.util.Comparator;
 
 public class WndItem extends Window {
+	
+	//only one wnditem can appear at a time
+	private static WndItem INSTANCE;
 
 	private static final float BUTTON_HEIGHT	= 16;
 	
 	private static final float GAP	= 2;
 	
-	private static final int WIDTH_P = 120;
-	private static final int WIDTH_L = 144;
+	private static final int WIDTH_MIN = 120;
+	private static final int WIDTH_MAX = 220;
 
 	public WndItem( final WndBag owner, final Item item ){
 		this( owner, item, owner != null );
@@ -51,8 +54,24 @@ public class WndItem extends Window {
 	public WndItem( final WndBag owner, final Item item , final boolean options ) {
 		
 		super();
+		
+		if( INSTANCE != null ){
+			INSTANCE.hide();
+		}
+		INSTANCE = this;
 
-		int width = SPDSettings.landscape() ? WIDTH_L : WIDTH_P;
+		int width = WIDTH_MIN;
+		
+		RenderedTextMultiline info = PixelScene.renderMultiline( item.info(), 6 );
+		info.maxWidth(width);
+		
+		//info box can go out of the screen on landscape, so widen it
+		while (SPDSettings.landscape()
+				&& info.height() > 100
+				&& width < WIDTH_MAX){
+			width += 20;
+			info.maxWidth(width);
+		}
 		
 		IconTitle titlebar = new IconTitle( item );
 		titlebar.setRect( 0, 0, width, 0 );
@@ -64,8 +83,6 @@ public class WndItem extends Window {
 			titlebar.color( ItemSlot.DEGRADED );
 		}
 		
-		RenderedTextMultiline info = PixelScene.renderMultiline( item.info(), 6 );
-		info.maxWidth(width);
 		info.setPos(titlebar.left(), titlebar.bottom() + GAP);
 		add( info );
 	
@@ -81,7 +98,7 @@ public class WndItem extends Window {
 					protected void onClick() {
 						hide();
 						if (owner != null && owner.parent != null) owner.hide();
-						item.execute( Dungeon.hero, action );
+						if (Dungeon.hero.isAlive()) item.execute( Dungeon.hero, action );
 					};
 				};
 				btn.setSize( btn.reqWidth(), BUTTON_HEIGHT );
@@ -152,7 +169,15 @@ public class WndItem extends Window {
 			x += btn.width()+1;
 		}
 	}
-
+	
+	@Override
+	public void hide() {
+		super.hide();
+		if (INSTANCE == this){
+			INSTANCE = null;
+		}
+	}
+	
 	private static Comparator<RedButton> widthComparator = new Comparator<RedButton>() {
 		@Override
 		public int compare(RedButton lhs, RedButton rhs) {

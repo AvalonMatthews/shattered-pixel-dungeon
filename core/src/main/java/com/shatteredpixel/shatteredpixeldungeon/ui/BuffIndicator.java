@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,8 @@ public class BuffIndicator extends Component {
 	//transparent icon
 	public static final int NONE	= 63;
 
-	//TODO consider creating an enum to store both index, and tint. Saves making separate images for color differences.
+	//FIXME this is becoming a mess, should do a big cleaning pass on all of these
+	//and think about tinting options
 	public static final int MIND_VISION	= 0;
 	public static final int LEVITATION	= 1;
 	public static final int FIRE		= 2;
@@ -63,7 +64,7 @@ public class BuffIndicator extends Component {
 	public static final int BLINDNESS	= 16;
 	public static final int COMBO		= 17;
 	public static final int FURY		= 18;
-	public static final int HEALING		= 19;
+	public static final int HERB_HEALING= 19;
 	public static final int ARMOR		= 20;
 	public static final int HEART		= 21;
 	public static final int LIGHT		= 22;
@@ -87,6 +88,8 @@ public class BuffIndicator extends Component {
 	public static final int BERSERK     = 40;
 	public static final int MOMENTUM    = 41;
 	public static final int PREPARATION = 42;
+	public static final int WELL_FED    = 43;
+	public static final int HEALING     = 44;
 
 	public static final int SIZE	= 7;
 	

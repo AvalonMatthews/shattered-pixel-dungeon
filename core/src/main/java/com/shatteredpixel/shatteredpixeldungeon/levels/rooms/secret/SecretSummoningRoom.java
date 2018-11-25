@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ public class SecretSummoningRoom extends SecretRoom {
 		Painter.fill(level, this, 1, Terrain.SECRET_TRAP);
 		
 		Point center = center();
-		level.drop(Generator.random(), level.pointToCell(center)).type = Heap.Type.SKELETON;
+		level.drop(Generator.random(), level.pointToCell(center)).setHauntedIfCursed(0.75f).type = Heap.Type.SKELETON;
 		
 		for (Point p : getPoints()){
 			int cell = level.pointToCell(p);

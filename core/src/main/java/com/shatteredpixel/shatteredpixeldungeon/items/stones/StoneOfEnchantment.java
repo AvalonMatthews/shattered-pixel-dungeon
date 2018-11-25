@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ public class StoneOfEnchantment extends InventoryStone {
 	
 	{
 		mode = WndBag.Mode.ENCHANTABLE;
-		image = ItemSpriteSheet.STONE_TIWAZ;
+		image = ItemSpriteSheet.STONE_ENCHANT;
 	}
 	
 	@Override
@@ -54,12 +54,18 @@ public class StoneOfEnchantment extends InventoryStone {
 		curUser.sprite.emitter().start( Speck.factory( Speck.LIGHT ), 0.1f, 5 );
 		Enchanting.show( curUser, item );
 		
-		//FIXME add this to translations
 		if (item instanceof Weapon) {
 			GLog.p(Messages.get(this, "weapon"));
 		} else {
 			GLog.p(Messages.get(this, "armor"));
 		}
 		
+		useAnimation();
+		
+	}
+	
+	@Override
+	public int price() {
+		return 30 * quantity;
 	}
 }

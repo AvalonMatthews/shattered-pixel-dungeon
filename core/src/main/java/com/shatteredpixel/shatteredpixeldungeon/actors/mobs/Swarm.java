@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,8 +139,8 @@ public class Swarm extends Mob {
 	
 	@Override
 	public void rollToDropLoot() {
-		//sets drop chance
-		lootChance = 1f/((6 + 2* Dungeon.LimitedDrops.SWARM_HP.count ) * (generation+1) );
+		lootChance = 1f/(6 * (generation+1) );
+		lootChance *= (5f - Dungeon.LimitedDrops.SWARM_HP.count) / 5f;
 		super.rollToDropLoot();
 	}
 	

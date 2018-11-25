@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,23 +98,21 @@ public class Pasty extends Food {
 	}
 	
 	@Override
-	public void execute(Hero hero, String action) {
-		super.execute(hero, action);
-
-		if (action.equals(AC_EAT)){
-			switch(holiday){
-				case NONE:
-					break; //do nothing extra
-				case HWEEN:
-					//heals for 10% max hp
-					hero.HP = Math.min(hero.HP + hero.HT/10, hero.HT);
-					hero.sprite.emitter().burst( Speck.factory( Speck.HEALING ), 1 );
-					break;
-				case XMAS:
-					Buff.affect( hero, Recharging.class, 2f ); //half of a charge
-					ScrollOfRecharging.charge( hero );
-					break;
-			}
+	protected void satisfy(Hero hero) {
+		super.satisfy(hero);
+		
+		switch(holiday){
+			case NONE:
+				break; //do nothing extra
+			case HWEEN:
+				//heals for 10% max hp
+				hero.HP = Math.min(hero.HP + hero.HT/10, hero.HT);
+				hero.sprite.emitter().burst( Speck.factory( Speck.HEALING ), 1 );
+				break;
+			case XMAS:
+				Buff.affect( hero, Recharging.class, 2f ); //half of a charge
+				ScrollOfRecharging.charge( hero );
+				break;
 		}
 	}
 

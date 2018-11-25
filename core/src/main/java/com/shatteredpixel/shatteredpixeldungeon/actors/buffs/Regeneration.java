@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,11 +39,11 @@ public class Regeneration extends Buff {
 	public boolean act() {
 		if (target.isAlive()) {
 
-			if (target.HP < target.HT && !((Hero)target).isStarving()) {
+			if (target.HP < regencap() && !((Hero)target).isStarving()) {
 				LockedFloor lock = target.buff(LockedFloor.class);
 				if (target.HP > 0 && (lock == null || lock.regenOn())) {
 					target.HP += 1;
-					if (target.HP == target.HT) {
+					if (target.HP == regencap()) {
 						((Hero) target).resting = false;
 					}
 				}
@@ -66,5 +66,9 @@ public class Regeneration extends Buff {
 		}
 		
 		return true;
+	}
+	
+	public int regencap(){
+		return target.HT;
 	}
 }

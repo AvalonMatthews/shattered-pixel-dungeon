@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ public class Ring extends KindofMisc {
 	
 	public void reset() {
 		super.reset();
-		if (handler != null){
+		if (handler != null && handler.contains(this)){
 			image = handler.image(this);
 			gem = handler.label(this);
 		}
@@ -136,10 +136,10 @@ public class Ring extends KindofMisc {
 	}
 	
 	public boolean isKnown() {
-		return handler.isKnown( this );
+		return handler != null && handler.isKnown( this );
 	}
 	
-	protected void setKnown() {
+	public void setKnown() {
 		if (!isKnown()) {
 			handler.know( this );
 		}
@@ -160,13 +160,14 @@ public class Ring extends KindofMisc {
 		String desc = isKnown()? desc() : Messages.get(this, "unknown_desc");
 
 		if (cursed && isEquipped( Dungeon.hero )) {
-			
 			desc += "\n\n" + Messages.get(Ring.class, "cursed_worn");
 			
 		} else if (cursed && cursedKnown) {
-
 			desc += "\n\n" + Messages.get(Ring.class, "curse_known");
-
+			
+		} else if (!isIdentified() && cursedKnown){
+			desc += "\n\n" + Messages.get(Ring.class, "not_cursed");
+			
 		}
 
 		return desc;

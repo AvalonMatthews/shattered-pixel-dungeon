@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -188,6 +188,7 @@ public class Imp extends NPC {
 				} while (
 						npc.pos == -1 ||
 						level.heaps.get( npc.pos ) != null ||
+						level.traps.get( npc.pos) != null ||
 						level.findMob( npc.pos ) != null ||
 						//The imp doesn't move, so he cannot obstruct a passageway
 						!(level.passable[npc.pos + PathFinder.CIRCLE4[0]] && level.passable[npc.pos + PathFinder.CIRCLE4[2]]) ||

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,10 +25,11 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
-public class Alchemy extends Blob {
+public class Alchemy extends Blob implements AlchemyScene.AlchemyProvider {
 
 	protected int pos;
 	
@@ -63,5 +64,19 @@ public class Alchemy extends Blob {
 	public void use( BlobEmitter emitter ) {
 		super.use( emitter );
 		emitter.start( Speck.factory( Speck.BUBBLE ), 0.33f, 0 );
+	}
+	
+	public static int alchPos;
+	
+	//1 volume is kept in reserve
+	
+	@Override
+	public int getEnergy() {
+		return Math.max(0, cur[alchPos] - 1);
+	}
+	
+	@Override
+	public void spendEnergy(int reduction) {
+		cur[alchPos] = Math.max(1, cur[alchPos] - reduction);
 	}
 }

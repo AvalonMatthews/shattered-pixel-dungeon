@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,10 @@ public class HolyDart extends TippedDart {
 	public int proc(Char attacker, Char defender, int damage) {
 		
 		Buff.affect(defender, Bless.class, 20f);
+		
+		if (attacker.alignment == defender.alignment){
+			return 0;
+		}
 		
 		return super.proc(attacker, defender, damage);
 	}

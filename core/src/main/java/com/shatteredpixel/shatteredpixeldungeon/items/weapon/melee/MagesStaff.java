@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -130,7 +130,8 @@ public class MagesStaff extends MeleeWeapon {
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
-		if (wand != null && Dungeon.hero.subClass == HeroSubClass.BATTLEMAGE) {
+		if (wand != null &&
+				attacker instanceof Hero && ((Hero)attacker).subClass == HeroSubClass.BATTLEMAGE) {
 			if (wand.curCharges < wand.maxCharges) wand.partialCharge += 0.33f;
 			ScrollOfRecharging.charge((Hero)attacker);
 			wand.onHit(this, attacker, defender, damage);
@@ -353,7 +354,6 @@ public class MagesStaff extends MeleeWeapon {
 			Dungeon.quickslot.clearItem(wand);
 
 			wand.detach(curUser.belongings.backpack);
-			Badges.validateTutorial();
 
 			GLog.p( Messages.get(MagesStaff.class, "imbue", wand.name()));
 			imbueWand( wand, curUser );

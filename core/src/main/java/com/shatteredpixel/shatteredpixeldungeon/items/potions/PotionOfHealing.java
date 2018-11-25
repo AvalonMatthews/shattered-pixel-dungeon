@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 public class PotionOfHealing extends Potion {
 
 	{
-		initials = 2;
+		initials = 3;
 
 		bones = true;
 	}
@@ -44,7 +44,7 @@ public class PotionOfHealing extends Potion {
 	public void apply( Hero hero ) {
 		setKnown();
 		//starts out healing 30 hp, equalizes with hero health total at level 11
-		Buff.affect( hero, Healing.class ).setHeal((int)(0.8f*hero.HT + 14), 0.333f, 0);
+		Buff.affect( hero, Healing.class ).setHeal((int)(0.8f*hero.HT + 14), 0.25f, 0);
 		cure( hero );
 		GLog.p( Messages.get(this, "heal") );
 	}

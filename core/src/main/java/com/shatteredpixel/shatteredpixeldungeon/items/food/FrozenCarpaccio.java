@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,15 +47,11 @@ public class FrozenCarpaccio extends Food {
 	}
 	
 	@Override
-	public void execute( Hero hero, String action ) {
-		
-		super.execute( hero, action );
-		
-		if (action.equals( AC_EAT )) {
-			effect(hero);
-		}
+	protected void satisfy(Hero hero) {
+		super.satisfy(hero);
+		effect(hero);
 	}
-
+	
 	public int price() {
 		return 10 * quantity;
 	}
@@ -68,7 +64,7 @@ public class FrozenCarpaccio extends Food {
 				break;
 			case 1:
 				GLog.i( Messages.get(FrozenCarpaccio.class, "hard") );
-				Buff.affect( hero, Barkskin.class ).level( hero.HT / 4 );
+				Buff.affect( hero, Barkskin.class ).set( hero.HT / 4, 1 );
 				break;
 			case 2:
 				GLog.i( Messages.get(FrozenCarpaccio.class, "refresh") );

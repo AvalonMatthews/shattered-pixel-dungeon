@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,11 @@ public class Random {
 	//returns a uniformly distributed float in the range [min, max)
 	public static float Float( float min, float max ) {
 		return min + Float(max - min);
+	}
+	
+	//returns a triangularly distributed float in the range [min, max)
+	public static float NormalFloat( float min, float max ) {
+		return min + ((Float(max - min) + Float(max - min))/2f);
 	}
 
 	//returns a uniformly distributed int in the range [0, max)

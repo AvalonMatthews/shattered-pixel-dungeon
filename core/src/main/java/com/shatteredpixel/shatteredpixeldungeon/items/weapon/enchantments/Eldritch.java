@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,8 @@ public class Eldritch extends Weapon.Enchantment {
 			if (defender == Dungeon.hero) {
 				Buff.affect( defender, Vertigo.class, Vertigo.DURATION );
 			} else {
-				Buff.affect( defender, Terror.class, Terror.DURATION ).object = attacker.id();
+				//damage will reduce by 5 turns, so effectively 10 turns of terror
+				Buff.affect( defender, Terror.class, 10f + 5f ).object = attacker.id();
 			}
 
 		}

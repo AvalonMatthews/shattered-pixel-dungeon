@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,17 +21,14 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special;
 
-import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
-import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WaterOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 
 public class SpecialRoom extends Room {
 	
@@ -62,46 +59,33 @@ public class SpecialRoom extends Room {
 	
 	private static final ArrayList<Class<? extends SpecialRoom>> ALL_SPEC = new ArrayList<>( Arrays.asList(
 			WeakFloorRoom.class, MagicWellRoom.class, CryptRoom.class, PoolRoom.class, GardenRoom.class, LibraryRoom.class, ArmoryRoom.class,
-			TreasuryRoom.class, TrapsRoom.class, StorageRoom.class, StatueRoom.class, LaboratoryRoom.class, VaultRoom.class
+			TreasuryRoom.class, TrapsRoom.class, StorageRoom.class, StatueRoom.class, VaultRoom.class, RunestoneRoom.class
 	) );
 	
 	public static ArrayList<Class<? extends Room>> runSpecials = new ArrayList<>();
 	public static ArrayList<Class<? extends Room>> floorSpecials = new ArrayList<>();
 	
 	private static int pitNeededDepth = -1;
-	private static int guaranteedWellDepth = Integer.MAX_VALUE;
 	
 	public static void initForRun() {
 		runSpecials = (ArrayList<Class<?extends Room>>)ALL_SPEC.clone();
 		
-		//remove special rooms disallowed by challenges
-		if (Dungeon.isChallenged( Challenges.NO_ARMOR )){
-			//no sense in giving an armor reward room on a run with no armor.
-			runSpecials.remove( CryptRoom.class );
-		}
-		if (Dungeon.isChallenged( Challenges.NO_HERBALISM )){
-			//Would be a bit mean to spawn these with no plants in them
-			runSpecials.remove( GardenRoom.class );
-		}
-		
 		pitNeededDepth = -1;
-		guaranteedWellDepth = Random.IntRange( 6, 14 );
 		Random.shuffle(runSpecials);
 	}
 	
 	public static void initForFloor(){
-		//laboratory rooms are more common
-		int labIdx = runSpecials.indexOf(LaboratoryRoom.class);
-		if (labIdx > 0) {
-			Collections.swap(runSpecials, labIdx-1, labIdx);
-		}
-		
 		floorSpecials = (ArrayList<Class<?extends Room>>) runSpecials.clone();
+		
+		//laboratory rooms spawn at set intervals every chapter
+		if (Dungeon.depth%5 == (Dungeon.seed%3 + 2)){
+			floorSpecials.add(0, LaboratoryRoom.class);
+		}
 	}
 	
 	private static void useType( Class<?extends Room> type ) {
+		floorSpecials.remove( type );
 		if (runSpecials.remove( type )) {
-			floorSpecials.remove( type );
 			runSpecials.add( type );
 		}
 	}
@@ -110,18 +94,14 @@ public class SpecialRoom extends Room {
 		if (pitNeededDepth == depth) pitNeededDepth = -1;
 	}
 	
-	public static void disableGuaranteedWell(){
-		guaranteedWellDepth = Integer.MAX_VALUE;
-	}
-	
 	public static SpecialRoom createRoom(){
 		if (Dungeon.depth == pitNeededDepth){
 			pitNeededDepth = -1;
 			
 			floorSpecials.remove( ArmoryRoom.class );
 			floorSpecials.remove( CryptRoom.class );
-			floorSpecials.remove( LaboratoryRoom.class );
 			floorSpecials.remove( LibraryRoom.class );
+			floorSpecials.remove( RunestoneRoom.class );
 			floorSpecials.remove( StatueRoom.class );
 			floorSpecials.remove( TreasuryRoom.class );
 			floorSpecials.remove( VaultRoom.class );
@@ -129,13 +109,10 @@ public class SpecialRoom extends Room {
 			
 			return new PitRoom();
 			
-		} else if (Dungeon.depth >= guaranteedWellDepth) {
-			useType( MagicWellRoom.class );
-			
-			MagicWellRoom r = new MagicWellRoom();
-			r.overrideWater = WaterOfTransmutation.class;
-			guaranteedWellDepth = Integer.MAX_VALUE;
-			return r;
+		} else if (floorSpecials.contains(LaboratoryRoom.class)) {
+		
+			useType(LaboratoryRoom.class);
+			return new LaboratoryRoom();
 		
 		} else {
 			
@@ -167,25 +144,25 @@ public class SpecialRoom extends Room {
 	
 	private static final String ROOMS	= "special_rooms";
 	private static final String PIT	    = "pit_needed";
-	private static final String WELL    = "guaranteed_well";
 	
 	public static void restoreRoomsFromBundle( Bundle bundle ) {
 		runSpecials.clear();
 		if (bundle.contains( ROOMS )) {
 			for (Class<? extends Room> type : bundle.getClassArray(ROOMS)) {
-				if (type != null) runSpecials.add(type);
+				//pre-0.7.0 saves
+				if (type != null && type != LaboratoryRoom.class) {
+					runSpecials.add(type);
+				}
 			}
 		} else {
 			initForRun();
 			ShatteredPixelDungeon.reportException(new Exception("specials array didn't exist!"));
 		}
 		pitNeededDepth = bundle.getInt(PIT);
-		guaranteedWellDepth = bundle.getInt(WELL);
 	}
 	
 	public static void storeRoomsInBundle( Bundle bundle ) {
 		bundle.put( ROOMS, runSpecials.toArray(new Class[0]) );
 		bundle.put( PIT, pitNeededDepth );
-		bundle.put( WELL, guaranteedWellDepth );
 	}
 }

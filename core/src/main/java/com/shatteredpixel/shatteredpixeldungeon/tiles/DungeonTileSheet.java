@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -144,6 +144,7 @@ public class DungeonTileSheet {
 		chasmStitcheable.put( Terrain.DOOR,         CHASM_WALL );
 		chasmStitcheable.put( Terrain.OPEN_DOOR,    CHASM_WALL );
 		chasmStitcheable.put( Terrain.LOCKED_DOOR,  CHASM_WALL );
+		chasmStitcheable.put( Terrain.SECRET_DOOR,  CHASM_WALL );
 		chasmStitcheable.put( Terrain.WALL_DECO,    CHASM_WALL );
 
 		//water
@@ -324,7 +325,7 @@ public class DungeonTileSheet {
 	public static final int DOOR_SIDEWAYS_LOCKED        = WALL_OVERHANG+24;
 
 	public static final int STATUE_OVERHANG             = WALL_OVERHANG+26;
-	public static final int ALCHEMY_POT_OVERHAND        = WALL_OVERHANG+27;
+	public static final int ALCHEMY_POT_OVERHANG        = WALL_OVERHANG+27;
 	public static final int BARRICADE_OVERHANG          = WALL_OVERHANG+28;
 	public static final int HIGH_GRASS_OVERHANG         = WALL_OVERHANG+29;
 

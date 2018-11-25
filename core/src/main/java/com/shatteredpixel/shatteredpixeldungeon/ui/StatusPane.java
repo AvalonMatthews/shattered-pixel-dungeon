@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,8 @@ public class StatusPane extends Component {
 	private MenuButton btnMenu;
 
 	private Toolbar.PickedUpItem pickedUp;
+	
+	private BitmapText version;
 
 	@Override
 	protected void createChildren() {
@@ -135,6 +137,10 @@ public class StatusPane extends Component {
 		add( buffs );
 
 		add( pickedUp = new Toolbar.PickedUpItem());
+		
+		version = new BitmapText( "v" + Game.version, PixelScene.pixelFont);
+		version.alpha( 0.5f );
+		add(version);
 	}
 
 	@Override
@@ -168,14 +174,22 @@ public class StatusPane extends Component {
 		btnJournal.setPos( width - 42, 1 );
 
 		btnMenu.setPos( width - btnMenu.width(), 1 );
+		
+		version.scale.set(PixelScene.align(0.5f));
+		version.measure();
+		version.x = width - version.width();
+		version.y = btnMenu.bottom() + (4 - version.baseLine());
+		PixelScene.align(version);
 	}
+	
+	private static final int[] warningColors = new int[]{0x660000, 0xCC0000, 0x660000};
 
 	@Override
 	public void update() {
 		super.update();
-
+		
 		float health = Dungeon.hero.HP;
-		float shield = Dungeon.hero.SHLD;
+		float shield = Dungeon.hero.shielding();
 		float max = Dungeon.hero.HT;
 
 		if (!Dungeon.hero.isAlive()) {
@@ -183,7 +197,7 @@ public class StatusPane extends Component {
 		} else if ((health/max) < 0.3f) {
 			warning += Game.elapsed * 5f *(0.4f - (health/max));
 			warning %= 1f;
-			avatar.tint(ColorMath.interpolate(warning, 0x660000, 0xCC0000, 0x660000), 0.5f );
+			avatar.tint(ColorMath.interpolate(warning, warningColors), 0.5f );
 		} else {
 			avatar.resetColor();
 		}

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -42,13 +43,9 @@ public class MysteryMeat extends Food {
 	}
 	
 	@Override
-	public void execute( Hero hero, String action ) {
-		
-		super.execute( hero, action );
-		
-		if (action.equals( AC_EAT )) {
-			effect(hero);
-		}
+	protected void satisfy(Hero hero) {
+		super.satisfy(hero);
+		effect(hero);
 	}
 
 	public int price() {
@@ -73,6 +70,24 @@ public class MysteryMeat extends Food {
 				GLog.w( Messages.get(MysteryMeat.class, "stuffed") );
 				Buff.prolong( hero, Slow.class, Slow.DURATION );
 				break;
+		}
+	}
+	
+	public static class PlaceHolder extends MysteryMeat {
+		
+		{
+			image = ItemSpriteSheet.FOOD_HOLDER;
+		}
+		
+		@Override
+		public boolean isSimilar(Item item) {
+			return item instanceof MysteryMeat || item instanceof StewedMeat
+					|| item instanceof ChargrilledMeat || item instanceof FrozenCarpaccio;
+		}
+		
+		@Override
+		public String info() {
+			return "";
 		}
 	}
 }

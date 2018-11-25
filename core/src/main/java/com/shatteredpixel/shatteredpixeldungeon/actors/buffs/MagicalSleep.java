@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,19 +35,19 @@ public class MagicalSleep extends Buff {
 	@Override
 	public boolean attachTo( Char target ) {
 		if (!target.isImmune(Sleep.class) && super.attachTo( target )) {
-
-			if (target instanceof Hero)
+			
+			target.paralysed++;
+			
+			if (target instanceof Hero) {
 				if (target.HP == target.HT) {
 					GLog.i(Messages.get(this, "toohealthy"));
 					detach();
-					return true;
 				} else {
 					GLog.i(Messages.get(this, "fallasleep"));
 				}
-			else if (target instanceof Mob)
-				((Mob)target).state = ((Mob)target).SLEEPING;
-
-			target.paralysed++;
+			} else if (target instanceof Mob) {
+				((Mob) target).state = ((Mob) target).SLEEPING;
+			}
 
 			return true;
 		} else {
@@ -64,7 +64,7 @@ public class MagicalSleep extends Buff {
 		if (target instanceof Hero) {
 			target.HP = Math.min(target.HP+1, target.HT);
 			((Hero) target).resting = true;
-			if (target.HP == target.HT) {
+			if (target.HP == target.buff(Regeneration.class).regencap()) {
 				GLog.p(Messages.get(this, "wakeup"));
 				detach();
 			}

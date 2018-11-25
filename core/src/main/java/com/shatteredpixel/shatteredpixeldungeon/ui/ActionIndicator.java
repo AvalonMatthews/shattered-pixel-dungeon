@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ public class ActionIndicator extends Tag {
 	}
 	
 	@Override
-	protected void layout() {
+	protected synchronized void layout() {
 		super.layout();
 		
 		if (icon != null){
@@ -63,7 +63,7 @@ public class ActionIndicator extends Tag {
 	private boolean needsLayout = false;
 	
 	@Override
-	public void update() {
+	public synchronized void update() {
 		super.update();
 
 		if (!Dungeon.hero.ready){
@@ -104,13 +104,15 @@ public class ActionIndicator extends Tag {
 
 	public static void updateIcon(){
 		if (instance != null){
-			if (instance.icon != null){
-				instance.icon.killAndErase();
-				instance.icon = null;
-			}
-			if (action != null){
-				instance.icon = action.getIcon();
-				instance.needsLayout = true;
+			synchronized (instance) {
+				if (instance.icon != null) {
+					instance.icon.killAndErase();
+					instance.icon = null;
+				}
+				if (action != null) {
+					instance.icon = action.getIcon();
+					instance.needsLayout = true;
+				}
 			}
 		}
 	}

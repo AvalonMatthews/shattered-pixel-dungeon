@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,17 +62,21 @@ public class Shopkeeper extends NPC {
 	}
 	
 	public void flee() {
+		destroy();
+		
+		sprite.killAndErase();
+		CellEmitter.get( pos ).burst( ElmoParticle.FACTORY, 6 );
+	}
+	
+	@Override
+	public void destroy() {
+		super.destroy();
 		for (Heap heap: Dungeon.level.heaps.values()) {
 			if (heap.type == Heap.Type.FOR_SALE) {
 				CellEmitter.get( heap.pos ).burst( ElmoParticle.FACTORY, 4 );
 				heap.destroy();
 			}
 		}
-		
-		destroy();
-		
-		sprite.killAndErase();
-		CellEmitter.get( pos ).burst( ElmoParticle.FACTORY, 6 );
 	}
 	
 	@Override

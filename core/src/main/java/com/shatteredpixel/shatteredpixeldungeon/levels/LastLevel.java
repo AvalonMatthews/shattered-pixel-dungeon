@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,8 +39,6 @@ public class LastLevel extends Level {
 	{
 		color1 = 0x801500;
 		color2 = 0xa68521;
-
-		viewDistance = 8;
 	}
 
 	private int pedestal;
@@ -109,7 +107,6 @@ public class LastLevel extends Level {
 		}
 
 		feeling = Feeling.NONE;
-		viewDistance = 8;
 
 		return true;
 	}

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -111,8 +111,11 @@ public abstract class RegularLevel extends Level {
 		
 		int specials = specialRooms();
 		SpecialRoom.initForFloor();
-		for (int i = 0; i < specials; i++)
-			initRooms.add(SpecialRoom.createRoom());
+		for (int i = 0; i < specials; i++) {
+			SpecialRoom s = SpecialRoom.createRoom();
+			if (s instanceof PitRoom) specials++;
+			initRooms.add(s);
+		}
 		
 		int secrets = SecretRoom.secretsForFloor(Dungeon.depth);
 		for (int i = 0; i < secrets; i++)
@@ -203,9 +206,6 @@ public abstract class RegularLevel extends Level {
 				for (int i = 0; i < ((StandardRoom) room).sizeCat.roomValue; i++) {
 					stdRooms.add(room);
 				}
-			//pre-0.6.0 save compatibility
-			} else if (room.legacyType.equals("STANDARD")){
-				stdRooms.add(room);
 			}
 		}
 		Random.shuffle(stdRooms);
@@ -266,6 +266,7 @@ public abstract class RegularLevel extends Level {
 			if (!heroFOV[cell]
 					&& Actor.findChar( cell ) == null
 					&& passable[cell]
+					&& room.canPlaceCharacter(cellToPoint(cell), this)
 					&& cell != exit) {
 				return cell;
 			}
@@ -276,9 +277,14 @@ public abstract class RegularLevel extends Level {
 	@Override
 	public int randomDestination() {
 		
+		int count = 0;
 		int cell = -1;
 		
 		while (true) {
+			
+			if (++count > 30) {
+				return -1;
+			}
 			
 			Room room = Random.element( rooms );
 			if (room == null) {
@@ -324,6 +330,9 @@ public abstract class RegularLevel extends Level {
 			}
 			
 			Item toDrop = Generator.random();
+
+			if (toDrop == null) continue;
+
 			if ((toDrop instanceof Artifact && Random.Int(2) == 0) ||
 					(toDrop.isUpgradable() && Random.Int(4 - toDrop.level()) == 0)){
 				Heap dropped = drop( toDrop, cell );
@@ -332,7 +341,11 @@ public abstract class RegularLevel extends Level {
 					addItemToSpawn(new GoldenKey(Dungeon.depth));
 				}
 			} else {
-				drop( toDrop, cell ).type = type;
+				Heap dropped = drop( toDrop, cell );
+				dropped.type = type;
+				if (type == Heap.Type.SKELETON){
+					dropped.setHauntedIfCursed(0.75f);
+				}
 			}
 			
 		}
@@ -353,7 +366,7 @@ public abstract class RegularLevel extends Level {
 				map[cell] = Terrain.GRASS;
 				losBlocking[cell] = false;
 			}
-			drop( item, cell ).type = Heap.Type.REMAINS;
+			drop( item, cell ).setHauntedIfCursed(1f).type = Heap.Type.REMAINS;
 		}
 
 		//guide pages
@@ -385,12 +398,24 @@ public abstract class RegularLevel extends Level {
 
 	}
 	
+	public ArrayList<Room> rooms() {
+		return new ArrayList<>(rooms);
+	}
+	
+	//FIXME pit rooms shouldn't be problematic enough to warrant this
+	public boolean hasPitRoom(){
+		for (Room r : rooms) {
+			if (r instanceof PitRoom) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	protected Room randomRoom( Class<?extends Room> type ) {
 		Random.shuffle( rooms );
 		for (Room r : rooms) {
-			if (type.isInstance(r)
-					//compatibility with pre-0.6.0 saves
-				|| (type == StandardRoom.class && r.legacyType.equals("STANDARD"))) {
+			if (type.isInstance(r)) {
 				return r;
 			}
 		}
@@ -435,7 +460,7 @@ public abstract class RegularLevel extends Level {
 	public int fallCell( boolean fallIntoPit ) {
 		if (fallIntoPit) {
 			for (Room room : rooms) {
-				if (room instanceof PitRoom || room.legacyType.equals("PIT")) {
+				if (room instanceof PitRoom) {
 					int result;
 					do {
 						result = pointToCell(room.random());
@@ -465,9 +490,9 @@ public abstract class RegularLevel extends Level {
 		rooms = new ArrayList<>( (Collection<Room>) ((Collection<?>) bundle.getCollection( "rooms" )) );
 		for (Room r : rooms) {
 			r.onLevelLoad( this );
-			if (r instanceof EntranceRoom || r.legacyType.equals("ENTRANCE")){
+			if (r instanceof EntranceRoom ){
 				roomEntrance = r;
-			} else if (r instanceof ExitRoom  || r.legacyType.equals("EXIT")){
+			} else if (r instanceof ExitRoom ){
 				roomExit = r;
 			}
 		}

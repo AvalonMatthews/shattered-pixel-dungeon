@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,11 @@ public abstract class DocumentPage extends Item {
 	public final boolean doPickUp(Hero hero) {
 		GameScene.pickUpJournal(this, hero.pos);
 		GameScene.flashJournal();
-		WndJournal.last_index = 0;
+		if (document() == Document.ALCHEMY_GUIDE){
+			WndJournal.last_index = 1;
+		} else {
+			WndJournal.last_index = 0;
+		}
 		document().addPage(page);
 		Sample.INSTANCE.play( Assets.SND_ITEM );
 		hero.spendAndNext( TIME_TO_PICK_UP );

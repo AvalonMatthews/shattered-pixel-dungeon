@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,11 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Alchemy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHaste;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation;
@@ -42,21 +44,21 @@ import com.watabou.utils.Random;
 
 import java.util.HashMap;
 
-//TODO specific implementation
 public class SecretLaboratoryRoom extends SecretRoom {
 	
 	private static HashMap<Class<? extends Potion>, Float> potionChances = new HashMap<>();
 	static{
-		potionChances.put(PotionOfHealing.class,        2f);
-		potionChances.put(PotionOfExperience.class,     5f);
-		potionChances.put(PotionOfToxicGas.class,       1f);
-		potionChances.put(PotionOfParalyticGas.class,   3f);
-		potionChances.put(PotionOfLiquidFlame.class,    1f);
-		potionChances.put(PotionOfLevitation.class,     1f);
-		potionChances.put(PotionOfMindVision.class,     3f);
-		potionChances.put(PotionOfPurity.class,         2f);
-		potionChances.put(PotionOfInvisibility.class,   1f);
-		potionChances.put(PotionOfFrost.class,          1f);
+		potionChances.put(PotionOfHealing.class,        1f);
+		potionChances.put(PotionOfMindVision.class,     2f);
+		potionChances.put(PotionOfFrost.class,          3f);
+		potionChances.put(PotionOfLiquidFlame.class,    3f);
+		potionChances.put(PotionOfToxicGas.class,       3f);
+		potionChances.put(PotionOfHaste.class,          4f);
+		potionChances.put(PotionOfInvisibility.class,   4f);
+		potionChances.put(PotionOfLevitation.class,     4f);
+		potionChances.put(PotionOfParalyticGas.class,   4f);
+		potionChances.put(PotionOfPurity.class,         4f);
+		potionChances.put(PotionOfExperience.class,     6f);
 	}
 	
 	public void paint( Level level ) {
@@ -69,9 +71,7 @@ public class SecretLaboratoryRoom extends SecretRoom {
 		Point pot = center();
 		Painter.set( level, pot, Terrain.ALCHEMY );
 		
-		Alchemy alchemy = new Alchemy();
-		alchemy.seed( level, pot.x + level.width() * pot.y, Random.IntRange(30, 60) );
-		level.blobs.put( Alchemy.class, alchemy );
+		Blob.seed( pot.x + level.width() * pot.y, 1+Random.NormalIntRange(20, 30), Alchemy.class, level );
 		
 		int n = Random.IntRange( 2, 3 );
 		HashMap<Class<? extends Potion>, Float> chances = new HashMap<>(potionChances);

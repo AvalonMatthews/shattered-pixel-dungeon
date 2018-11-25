@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ public class RockfallTrap extends Trap {
 
 			Char ch = Actor.findChar( cell );
 
-			if (ch != null){
+			if (ch != null && ch.isAlive()){
 				int damage = Random.NormalIntRange(5+Dungeon.depth, 10+Dungeon.depth*2);
 				damage -= ch.drRoll();
 				ch.damage( Math.max(damage, 0) , this);

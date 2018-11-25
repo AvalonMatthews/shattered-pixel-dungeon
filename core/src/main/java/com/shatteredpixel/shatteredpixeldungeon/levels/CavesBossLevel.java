@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ public class CavesBossLevel extends Level {
 	{
 		color1 = 0x534f3e;
 		color2 = 0xb9d661;
-		
-		viewDistance = 6;
+
+		viewDistance = Math.min(6, viewDistance);
 	}
 
 	private static final int WIDTH = 32;
@@ -202,7 +202,7 @@ public class CavesBossLevel extends Level {
 			do {
 				pos = Random.IntRange( ROOM_LEFT, ROOM_RIGHT ) + Random.IntRange( ROOM_TOP + 1, ROOM_BOTTOM ) * width();
 			} while (pos == entrance);
-			drop( item, pos ).type = Heap.Type.REMAINS;
+			drop( item, pos ).setHauntedIfCursed(1f).type = Heap.Type.REMAINS;
 		}
 	}
 	

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -125,13 +125,14 @@ public class Artifact extends KindofMisc {
 	@Override
 	public String info() {
 		if (cursed && cursedKnown && !isEquipped( Dungeon.hero )) {
-
 			return desc() + "\n\n" + Messages.get(Artifact.class, "curse_known");
-
+			
+		} else if (!isIdentified() && cursedKnown && !isEquipped( Dungeon.hero)) {
+			return desc()+ "\n\n" + Messages.get(Artifact.class, "not_cursed");
+			
 		} else {
-
 			return desc();
-
+			
 		}
 	}
 
@@ -206,6 +207,10 @@ public class Artifact extends KindofMisc {
 	}
 
 	protected ArtifactBuff activeBuff() {return null; }
+	
+	public void charge(Hero target){
+		//do nothing by default;
+	}
 
 	public class ArtifactBuff extends Buff {
 
@@ -236,7 +241,8 @@ public class Artifact extends KindofMisc {
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle(bundle);
 		exp = bundle.getInt( EXP );
-		charge = bundle.getInt( CHARGE );
+		if (chargeCap > 0)  charge = Math.min( chargeCap, bundle.getInt( CHARGE ));
+		else                charge = bundle.getInt( CHARGE );
 		partialCharge = bundle.getFloat( PARTIALCHARGE );
 	}
 }

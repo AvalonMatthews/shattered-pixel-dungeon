@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.EarthParticle;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfParalyticGas;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -39,7 +38,7 @@ import com.watabou.utils.Bundle;
 public class Earthroot extends Plant {
 	
 	{
-		image = 5;
+		image = 8;
 	}
 	
 	@Override
@@ -61,7 +60,6 @@ public class Earthroot extends Plant {
 			image = ItemSpriteSheet.SEED_EARTHROOT;
 
 			plantClass = Earthroot.class;
-			alchemyClass = PotionOfParalyticGas.class;
 
 			bones = true;
 		}
@@ -76,6 +74,7 @@ public class Earthroot extends Plant {
 
 		{
 			type = buffType.POSITIVE;
+			announced = true;
 		}
 		
 		@Override
@@ -93,14 +92,19 @@ public class Earthroot extends Plant {
 			return true;
 		}
 		
+		private static int blocking(){
+			return (Dungeon.depth + 5)/2;
+		}
+		
 		public int absorb( int damage ) {
-			if (level <= damage-damage/2) {
+			int block = Math.min( damage, blocking());
+			if (level <= block) {
 				detach();
-				return damage - level;
+				return damage - block;
 			} else {
-				level -= damage-damage/2;
+				level -= block;
 				BuffIndicator.refreshHero();
-				return damage/2;
+				return damage - block;
 			}
 		}
 		
@@ -129,7 +133,7 @@ public class Earthroot extends Plant {
 
 		@Override
 		public String desc() {
-			return Messages.get(this, "desc", level);
+			return Messages.get(this, "desc", blocking(), level);
 		}
 
 		private static final String POS		= "pos";

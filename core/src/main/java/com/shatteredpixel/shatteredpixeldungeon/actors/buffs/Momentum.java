@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,10 @@ import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
 public class Momentum extends Buff {
+	
+	{
+		type = buffType.POSITIVE;
+	}
 	
 	private int stacks = 0;
 	private int turnsSinceMove = 0;

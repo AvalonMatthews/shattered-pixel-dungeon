@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,9 +48,9 @@ public class TimekeepersHourglass extends Artifact {
 
 		levelCap = 5;
 
-		charge = 10+level()*2;
+		charge = 5+level();
 		partialCharge = 0;
-		chargeCap = 10+level()*2;
+		chargeCap = 5+level();
 
 		defaultAction = AC_ACTIVATE;
 	}
@@ -82,7 +82,7 @@ public class TimekeepersHourglass extends Artifact {
 					activeBuff.detach();
 					GLog.i( Messages.get(this, "deactivate") );
 				}
-			} else if (charge <= 1)         GLog.i( Messages.get(this, "no_charge") );
+			} else if (charge <= 0)         GLog.i( Messages.get(this, "no_charge") );
 			else if (cursed)                GLog.i( Messages.get(this, "cursed") );
 			else GameScene.show(
 						new WndOptions( Messages.get(this, "name"),
@@ -136,10 +136,17 @@ public class TimekeepersHourglass extends Artifact {
 	protected ArtifactBuff passiveBuff() {
 		return new hourglassRecharge();
 	}
+	
+	@Override
+	public void charge(Hero target) {
+		if (charge < chargeCap){
+			partialCharge += 0.25f;
+		}
+	}
 
 	@Override
 	public Item upgrade() {
-		chargeCap+= 2;
+		chargeCap+= 1;
 
 		//for artifact transmutation.
 		while (level()+1 > sandBags)
@@ -200,7 +207,7 @@ public class TimekeepersHourglass extends Artifact {
 
 			LockedFloor lock = target.buff(LockedFloor.class);
 			if (charge < chargeCap && !cursed && (lock == null || lock.regenOn())) {
-				partialCharge += 1 / (60f - (chargeCap - charge)*2f);
+				partialCharge += 1 / (90f - (chargeCap - charge)*3f);
 
 				if (partialCharge >= 1) {
 					partialCharge --;
@@ -222,21 +229,25 @@ public class TimekeepersHourglass extends Artifact {
 	}
 
 	public class timeStasis extends ArtifactBuff {
+		
+		{
+			type = buffType.POSITIVE;
+		}
 
 		@Override
 		public boolean attachTo(Char target) {
 
 			if (super.attachTo(target)) {
 
-				int usedCharge = Math.min(charge, 5);
+				int usedCharge = Math.min(charge, 2);
 				//buffs always act last, so the stasis buff should end a turn early.
-				spend(usedCharge - 1);
-				((Hero) target).spendAndNext(usedCharge);
+				spend((5*usedCharge) - 1);
+				((Hero) target).spendAndNext(5*usedCharge);
 
 				//shouldn't punish the player for going into stasis frequently
 				Hunger hunger = target.buff(Hunger.class);
 				if (hunger != null && !hunger.isStarving())
-					hunger.satisfy(usedCharge);
+					hunger.satisfy(5*usedCharge);
 
 				charge -= usedCharge;
 
@@ -269,6 +280,10 @@ public class TimekeepersHourglass extends Artifact {
 	}
 
 	public class timeFreeze extends ArtifactBuff {
+		
+		{
+			type = buffType.POSITIVE;
+		}
 
 		float partialTime = 1f;
 
@@ -277,8 +292,8 @@ public class TimekeepersHourglass extends Artifact {
 		public void processTime(float time){
 			partialTime += time;
 
-			while (partialTime >= 1f){
-				partialTime --;
+			while (partialTime >= 2f){
+				partialTime -= 2f;
 				charge --;
 			}
 
@@ -322,6 +337,7 @@ public class TimekeepersHourglass extends Artifact {
 			super.detach();
 			activeBuff = null;
 			triggerPresses();
+			target.next();
 		}
 
 		private static final String PRESSES = "presses";

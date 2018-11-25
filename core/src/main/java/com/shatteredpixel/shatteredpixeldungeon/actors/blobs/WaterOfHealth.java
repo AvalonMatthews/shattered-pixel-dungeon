@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,8 @@ public class WaterOfHealth extends WellWater {
 	@Override
 	protected boolean affectHero( Hero hero ) {
 		
+		if (!hero.isAlive()) return false;
+		
 		Sample.INSTANCE.play( Assets.SND_DRINK );
 
 		hero.HP = hero.HT;
@@ -51,7 +53,7 @@ public class WaterOfHealth extends WellWater {
 		hero.belongings.uncurseEquipped();
 		((Hunger)hero.buff( Hunger.class )).satisfy( Hunger.STARVING );
 		
-		CellEmitter.get( pos ).start( ShaftParticle.FACTORY, 0.2f, 3 );
+		CellEmitter.get( hero.pos ).start( ShaftParticle.FACTORY, 0.2f, 3 );
 
 		Dungeon.hero.interrupt();
 	
@@ -61,7 +63,7 @@ public class WaterOfHealth extends WellWater {
 	}
 	
 	@Override
-	protected Item affectItem( Item item ) {
+	protected Item affectItem( Item item, int pos ) {
 		if (item instanceof DewVial && !((DewVial)item).isFull()) {
 			((DewVial)item).fill();
 			return item;

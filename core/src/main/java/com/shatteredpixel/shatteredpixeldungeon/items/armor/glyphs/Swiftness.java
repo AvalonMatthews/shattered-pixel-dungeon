@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,18 +31,8 @@ public class Swiftness extends Armor.Glyph {
 
 	@Override
 	public int proc(Armor armor, Char attacker, Char defender, int damage) {
-		//no proc effect, see hero.defenseskill and hero.speed for effect.
+		//no proc effect, see hero.defenseskill and armor.speedfactor for effect.
 		return damage;
-	}
-
-	@Override
-	public int tierDRAdjust() {
-		return -2;
-	}
-
-	@Override
-	public float tierSTRAdjust() {
-		return -1;
 	}
 
 	@Override

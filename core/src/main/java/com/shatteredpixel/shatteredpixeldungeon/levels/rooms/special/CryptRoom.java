@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,10 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
@@ -70,19 +72,23 @@ public class CryptRoom extends SpecialRoom {
 	}
 	
 	private static Item prize( Level level ) {
-
+		
 		//1 floor set higher than normal
 		Armor prize = Generator.randomArmor( (Dungeon.depth / 5) + 1);
+		
+		if (Challenges.isItemBlocked(prize)){
+			return new Gold().random();
+		}
 
 		//if it isn't already cursed, give it a free upgrade
 		if (!prize.cursed){
 			prize.upgrade();
 			//curse the armor, unless it has a glyph
 			if (!prize.hasGoodGlyph()){
-				prize.cursed = prize.cursedKnown = true;
 				prize.inscribe(Armor.Glyph.randomCurse());
 			}
 		}
+		prize.cursed = prize.cursedKnown = true;
 		
 		return prize;
 	}

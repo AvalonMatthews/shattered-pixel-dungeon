@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
-import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -39,8 +38,8 @@ public class Bandit extends Thief {
 	{
 		spriteClass = BanditSprite.class;
 
-		//1 in 50 chance to be a crazy bandit, equates to overall 1/150 chance.
-		lootChance = 0.333f;
+		//1 in 50 chance to be a crazy bandit, equates to overall 1/100 chance.
+		lootChance = 0.5f;
 	}
 	
 	@Override
@@ -58,9 +57,4 @@ public class Bandit extends Thief {
 		}
 	}
 	
-	@Override
-	public void die( Object cause ) {
-		super.die( cause );
-		Badges.validateRare( this );
-	}
 }

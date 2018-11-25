@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,6 +102,13 @@ public class TalismanOfForesight extends Artifact {
 	protected ArtifactBuff passiveBuff() {
 		return new Foresight();
 	}
+	
+	@Override
+	public void charge(Hero target) {
+		if (charge < chargeCap){
+			partialCharge += 4f;
+		}
+	}
 
 	@Override
 	public String desc() {
@@ -174,14 +181,15 @@ public class TalismanOfForesight extends Artifact {
 			}
 			BuffIndicator.refreshHero();
 
-			//fully charges in 2500 turns at lvl=0, scaling to 1000 turns at lvl = 10.
+			//fully charges in 2000 turns at lvl=0, scaling to 667 turns at lvl = 10.
 			LockedFloor lock = target.buff(LockedFloor.class);
 			if (charge < chargeCap && !cursed && (lock == null || lock.regenOn())) {
-				partialCharge += 0.04+(level()*0.006);
+				partialCharge += 0.05+(level()*0.01);
 
 				if (partialCharge > 1 && charge < chargeCap) {
 					partialCharge--;
 					charge++;
+					updateQuickslot();
 				} else if (charge >= chargeCap) {
 					partialCharge = 0;
 					GLog.p( Messages.get(this, "full_charge") );
@@ -199,6 +207,7 @@ public class TalismanOfForesight extends Artifact {
 				GLog.p( Messages.get(this, "levelup") );
 				exp -= 4;
 			}
+			updateQuickslot();
 		}
 
 		@Override

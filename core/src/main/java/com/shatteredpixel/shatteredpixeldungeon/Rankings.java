@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,6 +110,7 @@ public enum Rankings {
 	public static final String STATS = "stats";
 	public static final String BADGES = "badges";
 	public static final String HANDLERS = "handlers";
+	public static final String CHALLENGES = "challenges";
 
 	public void saveGameData(Record rec){
 		rec.gameData = new Bundle();
@@ -152,6 +153,9 @@ public enum Rankings {
 
 		//restore items now that we're done saving
 		belongings.backpack.items = allItems;
+		
+		//save challenges
+		rec.gameData.put( CHALLENGES, Dungeon.challenges );
 	}
 
 	public void loadGameData(Record rec){
@@ -175,7 +179,7 @@ public enum Rankings {
 
 		Statistics.restoreFromBundle(data.getBundle(STATS));
 		
-		Dungeon.challenges = 0;
+		Dungeon.challenges = data.getInt(CHALLENGES);
 
 	}
 	

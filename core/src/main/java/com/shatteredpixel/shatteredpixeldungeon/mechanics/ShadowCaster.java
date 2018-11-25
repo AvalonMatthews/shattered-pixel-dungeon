@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.mechanics;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 
 //based on: http://www.roguebasin.com/index.php?title=FOV_using_recursive_shadowcasting
@@ -31,13 +32,16 @@ public final class ShadowCaster {
 	
 	//max length of rows as FOV moves out, for each FOV distance
 	//This is used to make the overall FOV circular, instead of square
-	private static int[][] rounding;
+	public static int[][] rounding;
 	static {
 		rounding = new int[MAX_DISTANCE+1][];
 		for (int i=1; i <= MAX_DISTANCE; i++) {
 			rounding[i] = new int[i+1];
 			for (int j=1; j <= i; j++) {
-				rounding[i][j] = (int)Math.min( j, Math.round( i * Math.cos( Math.asin( j / (i + 0.5) ))));
+				//testing the middle of a cell, so we use i + 0.5
+				rounding[i][j] = (int)Math.min(
+						j,
+						Math.round( (i + 0.5) * Math.cos( Math.asin( j / (i + 0.5) ))));
 			}
 		}
 	}
@@ -52,14 +56,19 @@ public final class ShadowCaster {
 		boolean[] losBlocking = Dungeon.level.losBlocking;
 		
 		//scans octants, clockwise
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, -1, false);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, +1, true);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, +1, true);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, +1, false);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, +1, false);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, -1, true);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, -1, true);
-		scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, -1, false);
+		try {
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, -1, false);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, +1, true);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, +1, true);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, +1, false);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, +1, false);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, +1, -1, true);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, -1, true);
+			scanOctant(distance, fieldOfView, losBlocking, 1, x, y, 0.0, 1.0, -1, -1, false);
+		} catch (Exception e){
+			ShatteredPixelDungeon.reportException(e);
+			BArray.setFalse(fieldOfView);
+		}
 
 	}
 	

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,8 +28,10 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
@@ -48,6 +50,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourg
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfAccuracy;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
+import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -189,6 +193,14 @@ public abstract class Mob extends Char {
 				return source;
 			}
 		}
+		
+		StoneOfAggression.Aggression aggro = buff( StoneOfAggression.Aggression.class );
+		if (aggro != null){
+			Char source = (Char)Actor.findById( aggro.object );
+			if (source != null){
+				return source;
+			}
+		}
 
 		//find a new enemy if..
 		boolean newEnemy = false;
@@ -200,6 +212,9 @@ public abstract class Mob extends Char {
 			newEnemy = true;
 		//We are amoked and current enemy is the hero
 		else if (buff( Amok.class ) != null && enemy == Dungeon.hero)
+			newEnemy = true;
+		//We are charmed and current enemy is what charmed us
+		else if (buff(Charm.class) != null && buff(Charm.class).object == enemy.id())
 			newEnemy = true;
 
 		if ( newEnemy ) {
@@ -250,7 +265,15 @@ public abstract class Mob extends Char {
 				
 			}
 			
-			//neutral character in particular do not choose enemies.
+			Charm charm = buff( Charm.class );
+			if (charm != null){
+				Char source = (Char)Actor.findById( charm.object );
+				if (source != null && enemies.contains(source) && enemies.size() > 1){
+					enemies.remove(source);
+				}
+			}
+			
+			//neutral characters in particular do not choose enemies.
 			if (enemies.isEmpty()){
 				return null;
 			} else {
@@ -291,7 +314,6 @@ public abstract class Mob extends Char {
 			state = FLEEING;
 		} else if (buff instanceof Sleep) {
 			state = SLEEPING;
-			this.sprite().showSleep();
 			postpone( Sleep.SWS );
 		}
 	}
@@ -411,6 +433,10 @@ public abstract class Mob extends Char {
 	}
 	
 	protected boolean getFurther( int target ) {
+		if (rooted || target == pos) {
+			return false;
+		}
+		
 		int step = Dungeon.flee( this, pos, target,
 			Dungeon.level.passable,
 			fieldOfView );
@@ -430,7 +456,9 @@ public abstract class Mob extends Char {
 	}
 	
 	protected float attackDelay() {
-		return 1f;
+		float delay = 1f;
+		if ( buff(Adrenaline.class) != null) delay /= 1.5f;
+		return delay;
 	}
 	
 	protected boolean doAttack( Char enemy ) {
@@ -465,7 +493,8 @@ public abstract class Mob extends Char {
 	
 	@Override
 	public int defenseSkill( Char enemy ) {
-		boolean seen = enemySeen || (enemy == Dungeon.hero && !Dungeon.hero.canSurpriseAttack());
+		boolean seen = (enemySeen && enemy.invisible == 0);
+		if (enemy == Dungeon.hero && !Dungeon.hero.canSurpriseAttack()) seen = true;
 		if ( seen
 				&& paralysed == 0
 				&& !(alignment == Alignment.ALLY && enemy == Dungeon.hero)) {
@@ -479,7 +508,8 @@ public abstract class Mob extends Char {
 	
 	@Override
 	public int defenseProc( Char enemy, int damage ) {
-		if (!enemySeen && enemy == Dungeon.hero && Dungeon.hero.canSurpriseAttack()) {
+		if ((!enemySeen || enemy.invisible > 0)
+				&& enemy == Dungeon.hero && Dungeon.hero.canSurpriseAttack()) {
 			if (enemy.buff(Preparation.class) != null) {
 				Wound.hit(this);
 			} else {
@@ -518,8 +548,6 @@ public abstract class Mob extends Char {
 	@Override
 	public void damage( int dmg, Object src ) {
 
-		Terror.recover( this );
-
 		if (state == SLEEPING) {
 			state = WANDERING;
 		}
@@ -548,14 +576,20 @@ public abstract class Mob extends Char {
 				int exp = Dungeon.hero.lvl <= maxLvl ? EXP : 0;
 				if (exp > 0) {
 					Dungeon.hero.sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "exp", exp));
-					Dungeon.hero.earnExp(exp);
 				}
+				Dungeon.hero.earnExp(exp);
 			}
 		}
 	}
 	
 	@Override
 	public void die( Object cause ) {
+		
+		if (cause == Chasm.class){
+			//50% chance to round up, 50% to round down
+			if (EXP % 2 == 1) EXP += Random.Int(2);
+			EXP /= 2;
+		}
 		
 		super.die( cause );
 
@@ -639,7 +673,7 @@ public abstract class Mob extends Char {
 	}
 	
 	public void yell( String str ) {
-		GLog.n( "%s: \"%s\" ", name, str );
+		GLog.n( "%s: \"%s\" ", Messages.titleCase(name), str );
 	}
 
 	//returns true when a mob sees the hero, and is currently targeting them.
@@ -657,7 +691,7 @@ public abstract class Mob extends Char {
 
 		@Override
 		public boolean act( boolean enemyInFOV, boolean justAlerted ) {
-			if (enemyInFOV && Random.Int( distance( enemy ) + enemy.stealth() + (enemy.flying ? 2 : 0) ) == 0) {
+			if (enemyInFOV && Random.Float( distance( enemy ) + enemy.stealth() + (enemy.flying ? 2 : 0) ) < 1) {
 
 				enemySeen = true;
 
@@ -667,7 +701,7 @@ public abstract class Mob extends Char {
 
 				if (Dungeon.isChallenged( Challenges.SWARM_INTELLIGENCE )) {
 					for (Mob mob : Dungeon.level.mobs) {
-						if (mob != Mob.this) {
+						if (Dungeon.level.distance(pos, mob.pos) <= 8 && mob.state != mob.HUNTING) {
 							mob.beckon( target );
 						}
 					}
@@ -692,7 +726,7 @@ public abstract class Mob extends Char {
 
 		@Override
 		public boolean act( boolean enemyInFOV, boolean justAlerted ) {
-			if (enemyInFOV && (justAlerted || Random.Int( distance( enemy ) / 2 + enemy.stealth() ) == 0)) {
+			if (enemyInFOV && (justAlerted || Random.Float( distance( enemy ) / 2f + enemy.stealth() ) < 1)) {
 
 				enemySeen = true;
 
@@ -700,6 +734,14 @@ public abstract class Mob extends Char {
 				alerted = true;
 				state = HUNTING;
 				target = enemy.pos;
+
+				if (Dungeon.isChallenged( Challenges.SWARM_INTELLIGENCE )) {
+					for (Mob mob : Dungeon.level.mobs) {
+						if (Dungeon.level.distance(pos, mob.pos) <= 8 && mob.state != mob.HUNTING) {
+							mob.beckon( target );
+						}
+					}
+				}
 
 			} else {
 

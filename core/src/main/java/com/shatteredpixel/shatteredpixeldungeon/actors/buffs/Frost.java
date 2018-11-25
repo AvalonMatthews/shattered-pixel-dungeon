@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
-import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfElements;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -46,6 +44,7 @@ public class Frost extends FlavourBuff {
 
 	{
 		type = buffType.NEGATIVE;
+		announced = true;
 	}
 	
 	@Override
@@ -62,7 +61,7 @@ public class Frost extends FlavourBuff {
 				ArrayList<Item> freezable = new ArrayList<>();
 				//does not reach inside of containers
 				for (Item i : hero.belongings.backpack.items){
-					if ((i instanceof Potion && !(i instanceof PotionOfStrength || i instanceof PotionOfMight))
+					if ((i instanceof Potion && !(i instanceof PotionOfStrength))
 						|| i instanceof MysteryMeat){
 						freezable.add(i);
 					}
@@ -70,6 +69,7 @@ public class Frost extends FlavourBuff {
 				
 				if (!freezable.isEmpty()){
 					Item toFreeze = Random.element(freezable).detach( hero.belongings.backpack );
+					GLog.w( Messages.get(this, "freezes", toFreeze.toString()) );
 					if (toFreeze instanceof Potion){
 						((Potion) toFreeze).shatter(hero.pos);
 					} else if (toFreeze instanceof MysteryMeat){
@@ -78,14 +78,13 @@ public class Frost extends FlavourBuff {
 							Dungeon.level.drop( carpaccio, target.pos ).sprite.drop();
 						}
 					}
-					GLog.w( Messages.get(this, "freezes", toFreeze.toString()) );
 				}
 				
 			} else if (target instanceof Thief) {
 
 				Item item = ((Thief) target).item;
 
-				if (item instanceof Potion && !(item instanceof PotionOfStrength || item instanceof PotionOfMight)) {
+				if (item instanceof Potion && !(item instanceof PotionOfStrength)) {
 					((Potion) ((Thief) target).item).shatter(target.pos);
 					((Thief) target).item = null;
 				} else if (item instanceof MysteryMeat){

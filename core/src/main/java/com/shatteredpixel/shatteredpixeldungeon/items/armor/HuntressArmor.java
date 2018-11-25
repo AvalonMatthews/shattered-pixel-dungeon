@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,8 @@ public class HuntressArmor extends ClassArmor {
 		Item proto = new Shuriken();
 		
 		for (Mob mob : Dungeon.level.mobs) {
-			if (Dungeon.level.heroFOV[mob.pos]) {
+			if (Dungeon.level.distance(curUser.pos, mob.pos) <= 12
+				&& Dungeon.level.heroFOV[mob.pos]) {
 				
 				Callback callback = new Callback() {
 					@Override

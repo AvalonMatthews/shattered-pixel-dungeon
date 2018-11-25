@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindofMisc;
@@ -38,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 public class Belongings implements Iterable<Item> {
@@ -127,6 +130,14 @@ public class Belongings implements Iterable<Item> {
 		}
 	}
 	
+	public static void preview( GamesInProgress.Info info, Bundle bundle ) {
+		if (bundle.contains( ARMOR )){
+			info.armorTier = ((Armor)bundle.get( ARMOR )).tier;
+		} else {
+			info.armorTier = 0;
+		}
+	}
+	
 	@SuppressWarnings("unchecked")
 	public<T extends Item> T getItem( Class<T> itemClass ) {
 
@@ -142,12 +153,24 @@ public class Belongings implements Iterable<Item> {
 	public Item getSimilar( Item similar ){
 		
 		for (Item item : this) {
-			if (item.isSimilar(similar)) {
+			if (similar.isSimilar(item)) {
 				return item;
 			}
 		}
 		
 		return null;
+	}
+	
+	public ArrayList<Item> getAllSimilar( Item similar ){
+		ArrayList<Item> result = new ArrayList<>();
+		
+		for (Item item : this) {
+			if (similar.isSimilar(item)) {
+				result.add(item);
+			}
+		}
+		
+		return result;
 	}
 	
 	public void identify() {
@@ -174,7 +197,9 @@ public class Belongings implements Iterable<Item> {
 			Badges.validateItemLevelAquired(misc2);
 		}
 		for (Item item : backpack) {
-			item.cursedKnown = true;
+			if (item instanceof EquipableItem || item instanceof Wand) {
+				item.cursedKnown = true;
+			}
 		}
 	}
 	
@@ -197,7 +222,7 @@ public class Belongings implements Iterable<Item> {
 				item.detachAll(backpack);
 				//you keep the bag itself, not its contents.
 				if (item instanceof Bag){
-					((Bag)item).clear();
+					((Bag)item).resurrect();
 				}
 				item.collect();
 			} else if (!item.isEquipped( owner )) {
@@ -231,6 +256,7 @@ public class Belongings implements Iterable<Item> {
 		
 		for (Wand.Charger charger : owner.buffs(Wand.Charger.class)){
 			charger.gainCharge(charge);
+			count++;
 		}
 		
 		return count;

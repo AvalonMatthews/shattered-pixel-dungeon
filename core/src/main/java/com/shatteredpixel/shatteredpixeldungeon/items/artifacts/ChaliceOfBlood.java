@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ public class ChaliceOfBlood extends Artifact {
 			if (damage > hero.HP*0.75) {
 
 				GameScene.show(
-					new WndOptions(Messages.get(this, "name"),
+					new WndOptions(Messages.titleCase(Messages.get(this, "name")),
 							Messages.get(this, "prick_warn"),
 							Messages.get(this, "yes"),
 							Messages.get(this, "no")) {
@@ -135,7 +135,12 @@ public class ChaliceOfBlood extends Artifact {
 	protected ArtifactBuff passiveBuff() {
 		return new chaliceRegen();
 	}
-
+	
+	@Override
+	public void charge(Hero target) {
+		target.HP = Math.min( target.HT, target.HP + 1 + Dungeon.depth/5);
+	}
+	
 	@Override
 	public String desc() {
 		String desc = super.desc();

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.stones;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 public abstract class Runestone extends Item {
 	
@@ -50,5 +51,32 @@ public abstract class Runestone extends Item {
 	@Override
 	public boolean isIdentified() {
 		return true;
+	}
+	
+	@Override
+	public int price() {
+		return 10 * quantity;
+	}
+	
+	public static class PlaceHolder extends Runestone {
+		
+		{
+			image = ItemSpriteSheet.STONE_HOLDER;
+		}
+		
+		@Override
+		protected void activate(int cell) {
+			//does nothing
+		}
+		
+		@Override
+		public boolean isSimilar(Item item) {
+			return item instanceof Runestone;
+		}
+		
+		@Override
+		public String info() {
+			return "";
+		}
 	}
 }

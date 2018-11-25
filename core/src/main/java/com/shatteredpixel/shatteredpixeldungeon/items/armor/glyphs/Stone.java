@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,31 @@ public class Stone extends Armor.Glyph {
 
 	@Override
 	public int proc(Armor armor, Char attacker, Char defender, int damage) {
-		//no proc effect, see armor.DrMin and the end of hero.getCloser
+		
+		testing = true;
+		float evasion = defender.defenseSkill(attacker);
+		float accuracy = attacker.attackSkill(defender);
+		testing = false;
+		
+		float hitChance;
+		if (evasion >= accuracy){
+			hitChance = 1f - (1f - (accuracy/evasion))/2f;
+		} else {
+			hitChance = 1f - (evasion/accuracy)/2f;
+		}
+		
+		//60% of dodge chance is applied as damage reduction
+		hitChance = (2f + 3f*hitChance)/5f;
+		
+		damage = (int)Math.ceil(damage * hitChance);
+		
 		return damage;
+	}
+	
+	private boolean testing = false;
+	
+	public boolean testingEvasion(){
+		return testing;
 	}
 
 	@Override

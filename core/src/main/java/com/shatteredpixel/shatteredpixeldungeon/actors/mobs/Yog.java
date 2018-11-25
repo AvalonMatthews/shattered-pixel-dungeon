@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfPsionicBlast;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfPsionicBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -112,13 +113,9 @@ public class Yog extends Mob {
 			if (mob instanceof RottingFist || mob instanceof BurningFist)
 				fists.add( mob );
 
-		for (Mob fist : fists)
-			fist.beckon( pos );
-
 		dmg >>= fists.size();
 		
 		super.damage( dmg, src );
-
 
 		LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
 		if (lock != null) lock.addTime(dmg*0.5f);
@@ -191,6 +188,7 @@ public class Yog extends Mob {
 		immunities.add( Sleep.class );
 		immunities.add( Burning.class );
 		immunities.add( ToxicGas.class );
+		immunities.add( ScrollOfRetribution.class );
 		immunities.add( ScrollOfPsionicBlast.class );
 		immunities.add( Vertigo.class );
 	}
@@ -240,7 +238,7 @@ public class Yog extends Mob {
 			damage = super.attackProc( enemy, damage );
 			
 			if (Random.Int( 3 ) == 0) {
-				Buff.affect( enemy, Ooze.class );
+				Buff.affect( enemy, Ooze.class ).set( 20f );
 				enemy.sprite.burst( 0xFF000000, 5 );
 			}
 			

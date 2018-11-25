@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -230,7 +230,15 @@ public class EtherealChains extends Artifact {
 	protected ArtifactBuff passiveBuff() {
 		return new chainsRecharge();
 	}
-
+	
+	@Override
+	public void charge(Hero target) {
+		int chargeTarget = 5+(level()*2);
+		if (charge < chargeTarget*2){
+			partialCharge += 0.5f;
+		}
+	}
+	
 	@Override
 	public String desc() {
 		String desc = super.desc();
@@ -270,7 +278,7 @@ public class EtherealChains extends Artifact {
 		}
 
 		public void gainExp( float levelPortion ) {
-			if (cursed) return;
+			if (cursed || levelPortion == 0) return;
 
 			exp += Math.round(levelPortion*100);
 

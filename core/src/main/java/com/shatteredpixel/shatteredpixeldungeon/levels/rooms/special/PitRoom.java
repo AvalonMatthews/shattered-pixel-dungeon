@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -60,21 +61,27 @@ public class PitRoom extends SpecialRoom {
 		}
 		
 		level.drop( new IronKey( Dungeon.depth ), remains ).type = Heap.Type.SKELETON;
-		int loot = Random.Int( 3 );
-		if (loot == 0) {
-			level.drop( Generator.random( Generator.Category.RING ), remains );
-		} else if (loot == 1) {
-			level.drop( Generator.random( Generator.Category.ARTIFACT ), remains );
-		} else {
-			level.drop( Generator.random( Random.oneOf(
-				Generator.Category.WEAPON,
-				Generator.Category.ARMOR
-			) ), remains );
-		}
+		Item mainLoot = null;
+		do {
+			switch (Random.Int(3)){
+				case 0:
+					mainLoot = Generator.random(Generator.Category.RING);
+					break;
+				case 1:
+					mainLoot = Generator.random(Generator.Category.ARTIFACT);
+					break;
+				case 2:
+					mainLoot = Generator.random(Random.oneOf(
+							Generator.Category.WEAPON,
+							Generator.Category.ARMOR));
+					break;
+			}
+		} while ( mainLoot == null || Challenges.isItemBlocked(mainLoot));
+		level.drop(mainLoot, remains);
 		
 		int n = Random.IntRange( 1, 2 );
 		for (int i=0; i < n; i++) {
-			level.drop( prize( level ), remains );
+			level.drop( prize( level ), remains ).setHauntedIfCursed(0.75f);
 		}
 	}
 	

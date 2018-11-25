@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.blobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
@@ -30,11 +31,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator.Category;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
@@ -49,7 +48,7 @@ import com.watabou.utils.Random;
 public class WaterOfTransmutation extends WellWater {
 	
 	@Override
-	protected Item affectItem( Item item ) {
+	protected Item affectItem( Item item, int pos ) {
 		
 		if (item instanceof MagesStaff) {
 			item = changeStaff( (MagesStaff)item );
@@ -105,7 +104,7 @@ public class WaterOfTransmutation extends WellWater {
 			Wand n;
 			do {
 				n = (Wand)Generator.random(Category.WAND);
-			} while (n.getClass() == wandClass);
+			} while (Challenges.isItemBlocked(n) || n.getClass() == wandClass);
 			n.level(0);
 			staff.imbueWand(n, null);
 		}
@@ -120,12 +119,12 @@ public class WaterOfTransmutation extends WellWater {
 
 		do {
 			try {
-				n = (Weapon)c.classes[Random.chances(c.probs)].newInstance();
+				n = (MeleeWeapon)c.classes[Random.chances(c.probs)].newInstance();
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException(e);
 				return null;
 			}
-		} while (!(n instanceof MeleeWeapon) || n.getClass() == w.getClass());
+		} while (Challenges.isItemBlocked(n) || n.getClass() == w.getClass());
 
 		int level = w.level();
 		if (level > 0) {
@@ -138,7 +137,7 @@ public class WaterOfTransmutation extends WellWater {
 		n.levelKnown = w.levelKnown;
 		n.cursedKnown = w.cursedKnown;
 		n.cursed = w.cursed;
-		n.imbue = w.imbue;
+		n.augment = w.augment;
 
 		return n;
 
@@ -148,7 +147,7 @@ public class WaterOfTransmutation extends WellWater {
 		Ring n;
 		do {
 			n = (Ring)Generator.random( Category.RING );
-		} while (n.getClass() == r.getClass());
+		} while (Challenges.isItemBlocked(n) || n.getClass() == r.getClass());
 		
 		n.level(0);
 		
@@ -169,14 +168,15 @@ public class WaterOfTransmutation extends WellWater {
 	private Artifact changeArtifact( Artifact a ) {
 		Artifact n = Generator.randomArtifact();
 
-		if (n != null){
+		if (n != null && !Challenges.isItemBlocked(n)){
 			n.cursedKnown = a.cursedKnown;
 			n.cursed = a.cursed;
 			n.levelKnown = a.levelKnown;
 			n.transferUpgrade(a.visiblyUpgraded());
+			return n;
 		}
 
-		return n;
+		return null;
 	}
 	
 	private Wand changeWand( Wand w ) {
@@ -184,7 +184,7 @@ public class WaterOfTransmutation extends WellWater {
 		Wand n;
 		do {
 			n = (Wand)Generator.random( Category.WAND );
-		} while (n.getClass() == w.getClass());
+		} while ( Challenges.isItemBlocked(n) || n.getClass() == w.getClass());
 		
 		n.level( 0 );
 		n.upgrade( w.level() );
@@ -210,11 +210,7 @@ public class WaterOfTransmutation extends WellWater {
 	private Scroll changeScroll( Scroll s ) {
 		if (s instanceof ScrollOfUpgrade) {
 			
-			return new ScrollOfMagicalInfusion();
-			
-		} else if (s instanceof ScrollOfMagicalInfusion) {
-			
-			return new ScrollOfUpgrade();
+			return null;
 			
 		} else {
 			
@@ -229,11 +225,7 @@ public class WaterOfTransmutation extends WellWater {
 	private Potion changePotion( Potion p ) {
 		if (p instanceof PotionOfStrength) {
 			
-			return new PotionOfMight();
-			
-		} else if (p instanceof PotionOfMight) {
-			
-			return new PotionOfStrength();
+			return null;
 			
 		} else {
 			

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,9 +57,9 @@ public class ScrollOfUpgrade extends InventoryScroll {
 
 			w.upgrade();
 
-			if (hadCursedEnchant && !w.hasCurseEnchant()){
+			if (w.cursedKnown && hadCursedEnchant && !w.hasCurseEnchant()){
 				removeCurse( Dungeon.hero );
-			} else if (wasCursed && !w.cursed){
+			} else if (w.cursedKnown && wasCursed && !w.cursed){
 				weakenCurse( Dungeon.hero );
 			}
 			if (hadGoodEnchant && !w.hasGoodEnchant()){
@@ -74,9 +74,9 @@ public class ScrollOfUpgrade extends InventoryScroll {
 
 			a.upgrade();
 
-			if (hadCursedGlyph && !a.hasCurseGlyph()){
+			if (a.cursedKnown && hadCursedGlyph && !a.hasCurseGlyph()){
 				removeCurse( Dungeon.hero );
-			} else if (wasCursed && !a.cursed){
+			} else if (a.cursedKnown && wasCursed && !a.cursed){
 				weakenCurse( Dungeon.hero );
 			}
 			if (hadGoodGlyph && !a.hasGoodGlyph()){

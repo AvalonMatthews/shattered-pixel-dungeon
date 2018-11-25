@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,12 +45,12 @@ public abstract class Actor implements Bundlable {
 	//default priority values for general actor categories
 	//note that some specific actors pick more specific values
 	//e.g. a buff acting after all normal buffs might have priority BUFF_PRIO + 1
-	protected final int VFX_PRIO    = 100;      //visual effects take priority
-	protected final int HERO_PRIO   = 0;        //positive priority is before hero, negative after
-	protected final int BLOB_PRIO   = -10;      //blobs act after hero, before mobs
-	protected final int MOB_PRIO    = -20;      //mobs act between buffs and blobd
-	protected final int BUFF_PRIO   = -30;      //buffs act last in a turn
-	private final int   DEFAULT     = -100;     //if no priority is given, act after all else
+	protected static final int VFX_PRIO    = 100;   //visual effects take priority
+	protected static final int HERO_PRIO   = 0;     //positive is before hero, negative after
+	protected static final int BLOB_PRIO   = -10;   //blobs act after hero, before mobs
+	protected static final int MOB_PRIO    = -20;   //mobs act between buffs and blobd
+	protected static final int BUFF_PRIO   = -30;   //buffs act last in a turn
+	private static final int   DEFAULT     = -100;  //if no priority is given, act after all else
 
 	//used to determine what order actors act in if their time is equal. Higher values act earlier.
 	protected int actPriority = DEFAULT;

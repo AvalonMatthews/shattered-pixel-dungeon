@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret;
 
+import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
-import com.shatteredpixel.shatteredpixeldungeon.scenes.StartScene;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -52,7 +52,7 @@ public abstract class SecretRoom extends SpecialRoom {
 		
 		float[] regionChances = baseRegionSecrets.clone();
 		
-		if (StartScene.selectedClass == HeroClass.ROGUE){
+		if (GamesInProgress.selectedClass == HeroClass.ROGUE){
 			for (int i = 0; i < regionChances.length; i++){
 				regionChances[i] += 0.6f;
 			}

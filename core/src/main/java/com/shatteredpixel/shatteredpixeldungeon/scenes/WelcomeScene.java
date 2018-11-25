@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,12 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BannerSprites;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Fireball;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndStartGame;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
@@ -42,7 +45,7 @@ import com.watabou.utils.FileUtils;
 
 public class WelcomeScene extends PixelScene {
 
-	private static int LATEST_UPDATE = ShatteredPixelDungeon.v0_6_3;
+	private static int LATEST_UPDATE = ShatteredPixelDungeon.v0_7_0;
 
 	@Override
 	public void create() {
@@ -97,8 +100,13 @@ public class WelcomeScene extends PixelScene {
 			@Override
 			protected void onClick() {
 				super.onClick();
-				updateVersion(previousVersion);
-				ShatteredPixelDungeon.switchScene(TitleScene.class);
+				if (previousVersion == 0){
+					SPDSettings.version(ShatteredPixelDungeon.versionCode);
+					WelcomeScene.this.add(new WndStartGame(1));
+				} else {
+					updateVersion(previousVersion);
+					ShatteredPixelDungeon.switchScene(TitleScene.class);
+				}
 			}
 		};
 
@@ -135,9 +143,9 @@ public class WelcomeScene extends PixelScene {
 			} else {
 				//TODO: change the messages here in accordance with the type of patch.
 				message = Messages.get(this, "patch_intro");
-				message += "\n\n" + Messages.get(this, "patch_bugfixes");
+				message += "\n\n" + Messages.get(this, "patch_balance");
+				message += "\n" + Messages.get(this, "patch_bugfixes");
 				message += "\n" + Messages.get(this, "patch_translations");
-				message += "\n" + Messages.get(this, "patch_balance");
 
 			}
 		} else {
@@ -161,6 +169,14 @@ public class WelcomeScene extends PixelScene {
 				//if we encounter a fatal error, then just clear the rankings
 				FileUtils.deleteFile( Rankings.RANKINGS_FILE );
 			}
+		}
+		
+		if (previousVersion < ShatteredPixelDungeon.v0_7_0){
+			Journal.loadGlobal();
+			Document.ALCHEMY_GUIDE.addPage("Potions");
+			Document.ALCHEMY_GUIDE.addPage("Stones");
+			Document.ALCHEMY_GUIDE.addPage("Darts");
+			Journal.saveGlobal();
 		}
 		
 		//convert game saves from the old format

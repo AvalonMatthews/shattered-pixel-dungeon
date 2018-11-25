@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,6 +90,11 @@ public class Statistics {
 		ankhsUsed		= bundle.getInt( ANKHS );
 		duration		= bundle.getFloat( DURATION );
 		amuletObtained	= bundle.getBoolean( AMULET );
+	}
+	
+	public static void preview( GamesInProgress.Info info, Bundle bundle ){
+		info.goldCollected  = bundle.getInt( GOLD );
+		info.maxDepth       = bundle.getInt( DEEPEST );
 	}
 
 }

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,6 +84,9 @@ public class WandOfBlastWave extends DamageWand {
 					Ballistica trajectory = new Ballistica(ch.pos, ch.pos + i, Ballistica.MAGIC_BOLT);
 					int strength = 1 + Math.round(level() / 2f);
 					throwChar(ch, trajectory, strength);
+				} else if (ch == Dungeon.hero){
+					Dungeon.fail( getClass() );
+					GLog.n( Messages.get( this, "ondeath") );
 				}
 			}
 		}
@@ -100,11 +103,7 @@ public class WandOfBlastWave extends DamageWand {
 				throwChar(ch, trajectory, strength);
 			}
 		}
-
-		if (!curUser.isAlive()) {
-			Dungeon.fail( getClass() );
-			GLog.n( Messages.get( this, "ondeath") );
-		}
+		
 	}
 
 	public static void throwChar(final Char ch, final Ballistica trajectory, int power){
@@ -140,6 +139,7 @@ public class WandOfBlastWave extends DamageWand {
 				}
 				Dungeon.level.press(ch.pos, ch, true);
 				if (ch == Dungeon.hero){
+					//FIXME currently no logic here if the throw effect kills the hero
 					Dungeon.observe();
 				}
 			}

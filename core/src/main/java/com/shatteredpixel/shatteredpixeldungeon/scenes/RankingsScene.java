@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,9 +73,9 @@ public class RankingsScene extends PixelScene {
 		Rankings.INSTANCE.load();
 
 		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9);
-		title.hardlight(Window.SHPX_COLOR);
-		title.x = (w - title.width()) / 2;
-		title.y = GAP;
+		title.hardlight(Window.TITLE_COLOR);
+		title.x = (w - title.width()) / 2f;
+		title.y = (16 - title.baseLine()) / 2f;
 		align(title);
 		add(title);
 		

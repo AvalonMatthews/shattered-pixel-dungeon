@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ abstract public class ClassArmor extends Armor {
 		
 		classArmor.level(armor.level());
 		classArmor.armorTier = armor.tier;
+		classArmor.augment = armor.augment;
 		classArmor.inscribe( armor.glyph );
 		classArmor.identify();
 		
@@ -128,21 +129,19 @@ abstract public class ClassArmor extends Armor {
 	@Override
 	public int STRReq(int lvl) {
 		lvl = Math.max(0, lvl);
-		float effectiveTier = armorTier;
-		if (glyph != null) effectiveTier += glyph.tierSTRAdjust();
-		effectiveTier = Math.max(0, effectiveTier);
 
 		//strength req decreases at +1,+3,+6,+10,etc.
-		return (8 + Math.round(effectiveTier * 2)) - (int)(Math.sqrt(8 * lvl + 1) - 1)/2;
+		return (8 + Math.round(armorTier * 2)) - (int)(Math.sqrt(8 * lvl + 1) - 1)/2;
 	}
 
 	@Override
 	public int DRMax(int lvl){
-		int effectiveTier = armorTier;
-		if (glyph != null) effectiveTier += glyph.tierDRAdjust();
-		effectiveTier = Math.max(0, effectiveTier);
-		
-		return Math.max(DRMin(lvl), effectiveTier * (2 + lvl));
+		int max = armorTier * (2 + lvl) + augment.defenseFactor(lvl);
+		if (lvl > max){
+			return ((lvl - max)+1)/2;
+		} else {
+			return max;
+		}
 	}
 	
 	@Override

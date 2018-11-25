@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,18 +22,30 @@
 package com.shatteredpixel.shatteredpixeldungeon.plants;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 public class Rotberry extends Plant {
 
 	{
-		image = 7;
+		image = 0;
 	}
 
 	@Override
 	public void activate() {
 		Dungeon.level.drop( new Seed(), pos ).sprite.drop();
+	}
+	
+	@Override
+	public void wither() {
+		Dungeon.level.uproot( pos );
+		
+		if (Dungeon.level.heroFOV[pos]) {
+			CellEmitter.get( pos ).burst( LeafParticle.GENERAL, 6 );
+		}
+		
+		//no warden benefit
 	}
 
 	public static class Seed extends Plant.Seed {
@@ -41,7 +53,11 @@ public class Rotberry extends Plant {
 			image = ItemSpriteSheet.SEED_ROTBERRY;
 
 			plantClass = Rotberry.class;
-			alchemyClass = PotionOfStrength.class;
+		}
+		
+		@Override
+		public int price() {
+			return 30 * quantity;
 		}
 	}
 }

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,12 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.features;
 
-import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barkskin;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
@@ -45,42 +45,45 @@ public class HighGrass {
 
 	public static void trample( Level level, int pos, Char ch ) {
 		
-		Level.set( pos, Terrain.GRASS );
+		if (ch instanceof Hero && ((Hero) ch).heroClass == HeroClass.HUNTRESS){
+			//Level.set(pos, Terrain.FURROWED_GRASS);
+			Level.set(pos, Terrain.GRASS);
+		} else {
+			Level.set(pos, Terrain.GRASS);
+		}
 		GameScene.updateMap( pos );
+		
+		int naturalismLevel = 0;
 
-		if (!Dungeon.isChallenged( Challenges.NO_HERBALISM )) {
-			int naturalismLevel = 0;
-
-			if (ch != null) {
-				SandalsOfNature.Naturalism naturalism = ch.buff( SandalsOfNature.Naturalism.class );
-				if (naturalism != null) {
-					if (!naturalism.isCursed()) {
-						naturalismLevel = naturalism.itemLevel() + 1;
-						naturalism.charge();
-					} else {
-						naturalismLevel = -1;
-					}
+		if (ch != null) {
+			SandalsOfNature.Naturalism naturalism = ch.buff( SandalsOfNature.Naturalism.class );
+			if (naturalism != null) {
+				if (!naturalism.isCursed()) {
+					naturalismLevel = naturalism.itemLevel() + 1;
+					naturalism.charge();
+				} else {
+					naturalismLevel = -1;
 				}
 			}
+		}
 
-			if (naturalismLevel >= 0) {
-				// Seed, scales from 1/16 to 1/4
-				if (Random.Int(16 - ((int) (naturalismLevel * 3))) == 0) {
-					Item seed = Generator.random(Generator.Category.SEED);
+		if (naturalismLevel >= 0) {
+			// Seed, scales from 1/20 to 1/4
+			if (Random.Int(20 - (naturalismLevel * 4)) == 0) {
+				Item seed = Generator.random(Generator.Category.SEED);
 
-					if (seed instanceof BlandfruitBush.Seed) {
-						if (Random.Int(3) - Dungeon.LimitedDrops.BLANDFRUIT_SEED.count >= 0) {
-							level.drop(seed, pos).sprite.drop();
-							Dungeon.LimitedDrops.BLANDFRUIT_SEED.count++;
-						}
-					} else
+				if (seed instanceof BlandfruitBush.Seed) {
+					if (Random.Int(3) - Dungeon.LimitedDrops.BLANDFRUIT_SEED.count >= 0) {
 						level.drop(seed, pos).sprite.drop();
-				}
+						Dungeon.LimitedDrops.BLANDFRUIT_SEED.count++;
+					}
+				} else
+					level.drop(seed, pos).sprite.drop();
+			}
 
-				// Dew, scales from 1/6 to 1/3
-				if (Random.Int(24 - naturalismLevel*3) <= 3) {
-					level.drop(new Dewdrop(), pos).sprite.drop();
-				}
+			// Dew, scales from 1/6 to 1/3
+			if (Random.Int(24 - naturalismLevel*3) <= 3) {
+				level.drop(new Dewdrop(), pos).sprite.drop();
 			}
 		}
 
@@ -92,12 +95,13 @@ public class HighGrass {
 
 			// Barkskin
 			if (hero.subClass == HeroSubClass.WARDEN) {
-				Buff.affect(ch, Barkskin.class).level(ch.HT / 3);
+				Buff.affect(ch, Barkskin.class).set(ch.HT / 3, 1);
 				leaves += 4;
 			}
 
 			//Camouflage
-			if (hero.belongings.armor != null && hero.belongings.armor.hasGlyph(Camouflage.class)){
+			//FIXME doesn't work with sad ghost
+			if (hero.belongings.armor != null && hero.belongings.armor.hasGlyph(Camouflage.class, hero)){
 				Buff.affect(hero, Camouflage.Camo.class).set(3 + hero.belongings.armor.level());
 				leaves += 4;
 			}

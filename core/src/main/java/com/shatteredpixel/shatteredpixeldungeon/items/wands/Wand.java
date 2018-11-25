@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SoulMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -36,7 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
-import com.shatteredpixel.shatteredpixeldungeon.items.bags.WandHolster;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
@@ -77,6 +78,7 @@ public abstract class Wand extends Item {
 	{
 		defaultAction = AC_ZAP;
 		usesTargeting = true;
+		bones = true;
 	}
 	
 	@Override
@@ -111,8 +113,8 @@ public abstract class Wand extends Item {
 	public boolean collect( Bag container ) {
 		if (super.collect( container )) {
 			if (container.owner != null) {
-				if (container instanceof WandHolster)
-					charge( container.owner, ((WandHolster) container).HOLSTER_SCALE_FACTOR );
+				if (container instanceof MagicalHolster)
+					charge( container.owner, ((MagicalHolster) container).HOLSTER_SCALE_FACTOR );
 				else
 					charge( container.owner );
 			}
@@ -144,7 +146,7 @@ public abstract class Wand extends Item {
 	protected void processSoulMark(Char target, int chargesUsed){
 		if (target != Dungeon.hero &&
 				Dungeon.hero.subClass == HeroSubClass.WARLOCK &&
-				Random.Float() < .09f + (level()*chargesUsed*0.06f)){
+				Random.Float() > Math.pow(0.9f, (level()*chargesUsed)+1)){
 			SoulMark.prolong(target, SoulMark.class, SoulMark.DURATION + level());
 		}
 	}
@@ -183,8 +185,11 @@ public abstract class Wand extends Item {
 
 		desc += "\n\n" + statsDesc();
 
-		if (cursed && cursedKnown)
+		if (cursed && cursedKnown) {
 			desc += "\n\n" + Messages.get(Wand.class, "cursed");
+		} else if (!isIdentified() && cursedKnown){
+			desc += "\n\n" + Messages.get(Wand.class, "not_cursed");
+		}
 
 		return desc;
 	}
@@ -365,6 +370,9 @@ public abstract class Wand extends Item {
 				if (target == curUser.pos || cell == curUser.pos) {
 					GLog.i( Messages.get(Wand.class, "self_target") );
 					return;
+				} else if (curUser.buff(MagicImmune.class) != null){
+					GLog.w( Messages.get(Wand.class, "no_magic") );
+					return;
 				}
 
 				curUser.sprite.zap(cell);
@@ -378,11 +386,11 @@ public abstract class Wand extends Item {
 				if (curWand.curCharges >= (curWand.cursed ? 1 : curWand.chargesPerCast())) {
 					
 					curUser.busy();
-
+					Invisibility.dispel();
+					
 					if (curWand.cursed){
 						CursedWand.cursedZap(curWand, curUser, new Ballistica( curUser.pos, target, Ballistica.MAGIC_BOLT));
 						if (!curWand.cursedKnown){
-							curWand.cursedKnown = true;
 							GLog.n(Messages.get(Wand.class, "curse_discover", curWand.name()));
 						}
 					} else {
@@ -393,8 +401,7 @@ public abstract class Wand extends Item {
 							}
 						});
 					}
-					
-					Invisibility.dispel();
+					curWand.cursedKnown = true;
 					
 				} else {
 

@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Firebloom;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.watabou.utils.Point;
 import com.watabou.utils.Random;
@@ -97,8 +98,11 @@ public class PlantsRoom extends StandardRoom {
 		super.paint(level);
 	}
 	
-	//TODO: sungrass, blandfruit, and starflower seeds can grow here, perhaps that's too good.
 	private static Plant.Seed randomSeed(){
-		return (Plant.Seed) Generator.random(Generator.Category.SEED);
+		Plant.Seed result;
+		do {
+			result = (Plant.Seed) Generator.random(Generator.Category.SEED);
+		} while (result instanceof Firebloom.Seed);
+		return result;
 	}
 }

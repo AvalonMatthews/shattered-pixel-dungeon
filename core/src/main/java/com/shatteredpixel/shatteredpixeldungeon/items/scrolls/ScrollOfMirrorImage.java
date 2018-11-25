@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,10 +40,10 @@ import java.util.ArrayList;
 public class ScrollOfMirrorImage extends Scroll {
 
 	{
-		initials = 4;
+		initials = 3;
 	}
 
-	private static final int NIMAGES	= 3;
+	private static final int NIMAGES	= 2;
 	
 	@Override
 	public void doRead() {
@@ -61,8 +61,8 @@ public class ScrollOfMirrorImage extends Scroll {
 	
 	@Override
 	public void empoweredRead() {
-		//spawns 2 images right away, delays 4 of them, 6 total.
-		new DelayedImageSpawner(6 - spawnImages(curUser, 2), 2, 3).attachTo(curUser);
+		//spawns 2 images right away, delays 3 of them, 5 total.
+		new DelayedImageSpawner(5 - spawnImages(curUser, 2), 1, 2).attachTo(curUser);
 		
 		setKnown();
 		
@@ -79,7 +79,7 @@ public class ScrollOfMirrorImage extends Scroll {
 		
 		for (int i = 0; i < PathFinder.NEIGHBOURS8.length; i++) {
 			int p = hero.pos + PathFinder.NEIGHBOURS8[i];
-			if (Actor.findChar( p ) == null && (Dungeon.level.passable[p] || Dungeon.level.avoid[p])) {
+			if (Actor.findChar( p ) == null && Dungeon.level.passable[p]) {
 				respawnPoints.add( p );
 			}
 		}

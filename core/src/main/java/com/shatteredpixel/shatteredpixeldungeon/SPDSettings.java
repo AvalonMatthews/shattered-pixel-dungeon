@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2017 Evan Debenham
+ * Copyright (C) 2014-2018 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,6 +75,8 @@ public class SPDSettings extends GameSettings {
 		((ShatteredPixelDungeon)ShatteredPixelDungeon.instance).updateDisplaySize();
 	}
 	
+	//FIXME in certain multi-window cases this can disagree with the actual screen size
+	//there should be an option to check for landscape the setting, and actual screen size
 	public static boolean landscape() {
 		return getBoolean(KEY_LANDSCAPE, Game.dispWidth > Game.dispHeight);
 	}
