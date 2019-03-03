@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,39 +48,41 @@ public class WarpingTrap extends Trap {
 	@Override
 	public void activate() {
 		CellEmitter.get(pos).start(Speck.factory(Speck.LIGHT), 0.2f, 3);
-		Sample.INSTANCE.play( Assets.SND_TELEPORT );
+		Sample.INSTANCE.play(Assets.SND_TELEPORT);
 		
-		Char ch = Actor.findChar( pos);
-		if (ch instanceof Hero){
-			ScrollOfTeleportation.teleportHero( (Hero)ch);
-			BArray.setFalse(Dungeon.level.visited);
-			BArray.setFalse(Dungeon.level.mapped);
-			GameScene.updateFog();
-			Dungeon.observe();
-			
-		} else if (ch != null){
-			int count = 10;
-			int pos;
-			do {
-				pos = Dungeon.level.randomRespawnCell();
-				if (count-- <= 0) {
-					break;
-				}
-			} while (pos == -1);
-			
-			if (pos == -1 || Dungeon.bossLevel()) {
-				
-				GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
+		Char ch = Actor.findChar(pos);
+		if (ch != null && !ch.flying) {
+			if (ch instanceof Hero) {
+				ScrollOfTeleportation.teleportHero((Hero) ch);
+				BArray.setFalse(Dungeon.level.visited);
+				BArray.setFalse(Dungeon.level.mapped);
+				GameScene.updateFog();
+				Dungeon.observe();
 				
 			} else {
+				int count = 10;
+				int pos;
+				do {
+					pos = Dungeon.level.randomRespawnCell();
+					if (count-- <= 0) {
+						break;
+					}
+				} while (pos == -1);
 				
-				ch.pos = pos;
-				if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING){
-					((Mob) ch).state = ((Mob) ch).WANDERING;
+				if (pos == -1 || Dungeon.bossLevel()) {
+					
+					GLog.w(Messages.get(ScrollOfTeleportation.class, "no_tele"));
+					
+				} else {
+					
+					ch.pos = pos;
+					if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING) {
+						((Mob) ch).state = ((Mob) ch).WANDERING;
+					}
+					ch.sprite.place(ch.pos);
+					ch.sprite.visible = Dungeon.level.heroFOV[pos];
+					
 				}
-				ch.sprite.place(ch.pos);
-				ch.sprite.visible = Dungeon.level.heroFOV[pos];
-				
 			}
 		}
 		

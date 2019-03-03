@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class WandOfFireblast extends DamageWand {
@@ -52,14 +53,14 @@ public class WandOfFireblast extends DamageWand {
 		collisionProperties = Ballistica.STOP_TERRAIN;
 	}
 
-	//1x/1.5x/2.25x damage
+	//1x/2x/3x damage
 	public int min(int lvl){
-		return (int)Math.round((1+lvl) * Math.pow(1.5f, chargesPerCast()-1));
+		return (1+lvl) * chargesPerCast();
 	}
 
-	//1x/1.5x/2.25x damage
+	//1x/2x/3x damage
 	public int max(int lvl){
-		return (int)Math.round((5+3*lvl) * Math.pow(1.5f, chargesPerCast()-1));
+		return (6+2*lvl) * chargesPerCast();
 	}
 
 	//the actual affected cells
@@ -70,7 +71,8 @@ public class WandOfFireblast extends DamageWand {
 	
 	@Override
 	protected void onZap( Ballistica bolt ) {
-
+		
+		ArrayList<Char> affectedChars = new ArrayList<>();
 		for( int cell : affectedCells){
 			
 			//ignore caster cell
@@ -86,18 +88,21 @@ public class WandOfFireblast extends DamageWand {
 			
 			Char ch = Actor.findChar( cell );
 			if (ch != null) {
-
-				processSoulMark(ch, chargesPerCast());
-				ch.damage(damageRoll(), this);
-				Buff.affect( ch, Burning.class ).reignite( ch );
-				switch(chargesPerCast()){
-					case 1:
-						break; //no effects
-					case 2:
-						Buff.affect(ch, Cripple.class, 4f); break;
-					case 3:
-						Buff.affect(ch, Paralysis.class, 4f); break;
-				}
+				affectedChars.add(ch);
+			}
+		}
+		
+		for ( Char ch : affectedChars ){
+			processSoulMark(ch, chargesPerCast());
+			ch.damage(damageRoll(), this);
+			Buff.affect( ch, Burning.class ).reignite( ch );
+			switch(chargesPerCast()){
+				case 1:
+					break; //no effects
+				case 2:
+					Buff.affect(ch, Cripple.class, 4f); break;
+				case 3:
+					Buff.affect(ch, Paralysis.class, 4f); break;
 			}
 		}
 	}
@@ -138,8 +143,8 @@ public class WandOfFireblast extends DamageWand {
 		affectedCells = new HashSet<>();
 		visualCells = new HashSet<>();
 
-		// 4/6/9 distance
-		int maxDist = (int)(4 * Math.pow(1.5,(chargesPerCast()-1)));
+		// 4/6/8 distance
+		int maxDist = 2 + 2*chargesPerCast();
 		int dist = Math.min(bolt.dist, maxDist);
 
 		for (int i = 0; i < PathFinder.CIRCLE8.length; i++){

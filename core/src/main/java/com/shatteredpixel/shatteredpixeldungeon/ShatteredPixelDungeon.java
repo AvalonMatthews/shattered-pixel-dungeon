@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,8 @@ public class ShatteredPixelDungeon extends Game {
 	public static final int v0_6_4a = 252;
 	public static final int v0_6_5c = 264;
 	
-	public static final int v0_7_0  = 303;
+	public static final int v0_7_0c = 311;
+	public static final int v0_7_1  = 318;
 	
 	public ShatteredPixelDungeon() {
 		super( WelcomeScene.class );
@@ -142,6 +143,15 @@ public class ShatteredPixelDungeon extends Game {
 		com.watabou.utils.Bundle.addAlias(
 				com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion.class,
 				"com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicalInfusion" );
+		
+		//v0.7.1
+		com.watabou.utils.Bundle.addAlias(
+				com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow.class,
+				"com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Boomerang" );
+		
+		com.watabou.utils.Bundle.addAlias(
+				com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gloves.class,
+				"com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Knuckles" );
 		
 	}
 	

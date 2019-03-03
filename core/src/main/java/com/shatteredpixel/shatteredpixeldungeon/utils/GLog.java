@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.utils;
 
-import android.util.Log;
-
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.Signal;
 
 public class GLog {
@@ -43,7 +42,7 @@ public class GLog {
 			text = Messages.format( text, args );
 		}
 		
-		Log.i( TAG, text );
+		DeviceCompat.log( TAG, text );
 		update.dispatch( text );
 	}
 	

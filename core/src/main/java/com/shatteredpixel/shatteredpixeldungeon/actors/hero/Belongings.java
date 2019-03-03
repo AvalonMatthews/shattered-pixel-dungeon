@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,10 +150,21 @@ public class Belongings implements Iterable<Item> {
 		return null;
 	}
 	
+	public boolean contains( Item contains ){
+		
+		for (Item item : this) {
+			if (contains == item ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
 	public Item getSimilar( Item similar ){
 		
 		for (Item item : this) {
-			if (similar.isSimilar(item)) {
+			if (similar != item && similar.isSimilar(item)) {
 				return item;
 			}
 		}
@@ -165,7 +176,7 @@ public class Belongings implements Iterable<Item> {
 		ArrayList<Item> result = new ArrayList<>();
 		
 		for (Item item : this) {
-			if (similar.isSimilar(item)) {
+			if (item != similar && similar.isSimilar(item)) {
 				result.add(item);
 			}
 		}

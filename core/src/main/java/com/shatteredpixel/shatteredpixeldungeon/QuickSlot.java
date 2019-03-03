@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,12 +92,15 @@ public class QuickSlot {
 	}
 
 	public void convertToPlaceholder(Item item){
-		Item placeholder = Item.virtual(item.getClass());
-
-		if (placeholder != null && contains(item))
-			for (int i = 0; i < SIZE; i++)
-				if (getItem(i) == item)
-					setSlot( i , placeholder );
+		
+		if (contains(item)) {
+			Item placeholder = item.virtual();
+			if (placeholder == null) return;
+			
+			for (int i = 0; i < SIZE; i++) {
+				if (getItem(i) == item) setSlot(i, placeholder);
+			}
+		}
 	}
 
 	public Item randomNonePlaceholder(){

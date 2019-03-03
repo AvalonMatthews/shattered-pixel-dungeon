@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ public class OozeTrap extends Trap {
 	public void activate() {
 		Char ch = Actor.findChar( pos );
 
-		if (ch != null){
+		if (ch != null && !ch.flying){
 			Buff.affect(ch, Ooze.class).set( 20f );
 			Splash.at( pos, 0x000000, 5);
 		}

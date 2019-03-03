@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.FileUtils;
 import com.watabou.utils.Random;
@@ -138,6 +139,8 @@ public class Bones {
 			if (depth == Dungeon.depth && Dungeon.challenges == 0) {
 				FileUtils.deleteFile( BONES_FILE );
 				depth = 0;
+				
+				if (item == null) return null;
 
 				//Enforces artifact uniqueness
 				if (item instanceof Artifact){
@@ -159,16 +162,18 @@ public class Bones {
 					}
 				}
 				
-				if (item.isUpgradable()) {
+				if (item.isUpgradable() && !(item instanceof MissileWeapon)) {
 					item.cursed = true;
 					item.cursedKnown = true;
-					if (item.isUpgradable()) {
-						//caps at +3
-						if (item.level() > 3) {
-							item.degrade( item.level() - 3 );
-						}
-						item.levelKnown = false;
+				}
+				
+				if (item.isUpgradable()) {
+					//caps at +3
+					if (item.level() > 3) {
+						item.degrade( item.level() - 3 );
 					}
+					//thrown weapons are always IDed, otherwise set unknown
+					item.levelKnown = item instanceof MissileWeapon;
 				}
 				
 				item.reset();

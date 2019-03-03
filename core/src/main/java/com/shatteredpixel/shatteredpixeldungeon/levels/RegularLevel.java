@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -237,7 +237,7 @@ public abstract class RegularLevel extends Level {
 		}
 
 		for (Mob m : mobs){
-			if (map[m.pos] == Terrain.HIGH_GRASS) {
+			if (map[m.pos] == Terrain.HIGH_GRASS || map[m.pos] == Terrain.FURROWED_GRASS) {
 				map[m.pos] = Terrain.GRASS;
 				losBlocking[m.pos] = false;
 			}
@@ -324,7 +324,7 @@ public abstract class RegularLevel extends Level {
 				type = Heap.Type.HEAP;
 			}
 			int cell = randomDropCell();
-			if (map[cell] == Terrain.HIGH_GRASS) {
+			if (map[cell] == Terrain.HIGH_GRASS || map[cell] == Terrain.FURROWED_GRASS) {
 				map[cell] = Terrain.GRASS;
 				losBlocking[cell] = false;
 			}
@@ -353,7 +353,7 @@ public abstract class RegularLevel extends Level {
 		for (Item item : itemsToSpawn) {
 			int cell = randomDropCell();
 			drop( item, cell ).type = Heap.Type.HEAP;
-			if (map[cell] == Terrain.HIGH_GRASS) {
+			if (map[cell] == Terrain.HIGH_GRASS || map[cell] == Terrain.FURROWED_GRASS) {
 				map[cell] = Terrain.GRASS;
 				losBlocking[cell] = false;
 			}
@@ -362,7 +362,7 @@ public abstract class RegularLevel extends Level {
 		Item item = Bones.get();
 		if (item != null) {
 			int cell = randomDropCell();
-			if (map[cell] == Terrain.HIGH_GRASS) {
+			if (map[cell] == Terrain.HIGH_GRASS || map[cell] == Terrain.FURROWED_GRASS) {
 				map[cell] = Terrain.GRASS;
 				losBlocking[cell] = false;
 			}
@@ -389,7 +389,7 @@ public abstract class RegularLevel extends Level {
 			GuidePage p = new GuidePage();
 			p.page(missingPages.get(0));
 			int cell = randomDropCell();
-			if (map[cell] == Terrain.HIGH_GRASS) {
+			if (map[cell] == Terrain.HIGH_GRASS || map[cell] == Terrain.FURROWED_GRASS) {
 				map[cell] = Terrain.GRASS;
 				losBlocking[cell] = false;
 			}

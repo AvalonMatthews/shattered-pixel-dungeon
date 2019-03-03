@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,8 +83,8 @@ public class MeleeWeapon extends Weapon {
 			}
 		}
 
-		String stats_desc = Messages.get(this, "stats_desc");
-		if (!stats_desc.equals("")) info+= "\n\n" + stats_desc;
+		String statsInfo = statsInfo();
+		if (!statsInfo.equals("")) info += "\n\n" + statsInfo;
 
 		switch (augment) {
 			case SPEED:
@@ -110,6 +110,10 @@ public class MeleeWeapon extends Weapon {
 		}
 		
 		return info;
+	}
+	
+	public String statsInfo(){
+		return Messages.get(this, "stats_desc");
 	}
 	
 	@Override

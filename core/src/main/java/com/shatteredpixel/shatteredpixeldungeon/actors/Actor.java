@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors;
 
-import android.util.SparseArray;
-
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
@@ -31,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.SparseArray;
 
 import java.util.HashSet;
 
@@ -59,11 +58,25 @@ public abstract class Actor implements Bundlable {
 	
 	protected void spend( float time ) {
 		this.time += time;
+		//if time is very close to a whole number, round to a whole number to fix errors
+		float ex = Math.abs(this.time % 1f);
+		if (ex < .001f){
+			this.time = Math.round(this.time);
+		}
+	}
+
+	public void spendToWhole(){
+		time = (float)Math.ceil(time);
 	}
 	
 	protected void postpone( float time ) {
 		if (this.time < now + time) {
 			this.time = now + time;
+			//if time is very close to a whole number, round to a whole number to fix errors
+			float ex = Math.abs(this.time % 1f);
+			if (ex < .001f){
+				this.time = Math.round(this.time);
+			}
 		}
 	}
 	
@@ -114,6 +127,10 @@ public abstract class Actor implements Bundlable {
 
 	private static float now = 0;
 	
+	public static float now(){
+		return now;
+	}
+	
 	public static synchronized void clear() {
 		
 		now = 0;
@@ -123,12 +140,10 @@ public abstract class Actor implements Bundlable {
 
 		ids.clear();
 	}
-	
+
 	public static synchronized void fixTime() {
 		
-		if (Dungeon.hero != null && all.contains( Dungeon.hero )) {
-			Statistics.duration += now;
-		}
+		if (all.isEmpty()) return;
 		
 		float min = Float.MAX_VALUE;
 		for (Actor a : all) {
@@ -136,10 +151,18 @@ public abstract class Actor implements Bundlable {
 				min = a.time;
 			}
 		}
+
+		//Only pull everything back by whole numbers
+		//So that turns always align with a whole number
+		min = (int)min;
 		for (Actor a : all) {
 			a.time -= min;
 		}
-		now = 0;
+
+		if (Dungeon.hero != null && all.contains( Dungeon.hero )) {
+			Statistics.duration += min;
+		}
+		now -= min;
 	}
 	
 	public static void init() {
@@ -320,8 +343,8 @@ public abstract class Actor implements Bundlable {
 	}
 
 	public static synchronized HashSet<Actor> all() {
-		return new HashSet<Actor>(all);
+		return new HashSet<>(all);
 	}
 
-	public static synchronized HashSet<Char> chars() { return new HashSet<Char>(chars); }
+	public static synchronized HashSet<Char> chars() { return new HashSet<>(chars); }
 }

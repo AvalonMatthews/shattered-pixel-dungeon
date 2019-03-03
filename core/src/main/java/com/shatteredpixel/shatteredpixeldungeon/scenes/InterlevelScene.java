@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ import com.watabou.noosa.NoosaScriptNoLighting;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.SkinnedBlock;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.DeviceCompat;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -138,6 +139,11 @@ public class InterlevelScene extends PixelScene {
 		else if (loadingDepth <= 25)    loadingAsset = Assets.LOADING_HALLS;
 		else                            loadingAsset = Assets.SHADOW;
 		
+		//speed up transition when debugging
+		if (DeviceCompat.isDebug()){
+			fadeTime /= 2;
+		}
+		
 		SkinnedBlock bg = new SkinnedBlock(Camera.main.width, Camera.main.height, loadingAsset ){
 			@Override
 			protected NoosaScript script() {
@@ -192,7 +198,12 @@ public class InterlevelScene extends PixelScene {
 				public void run() {
 					
 					try {
-						
+
+						if (Dungeon.hero != null){
+							Dungeon.hero.spendToWhole();
+						}
+						Actor.fixTime();
+
 						switch (mode) {
 							case DESCEND:
 								descend();
@@ -308,8 +319,6 @@ public class InterlevelScene extends PixelScene {
 
 	private void descend() throws IOException {
 
-		Actor.fixTime();
-		
 		if (Dungeon.hero == null) {
 			DriedRose.clearHeldGhostHero();
 			Dungeon.init();
@@ -335,7 +344,6 @@ public class InterlevelScene extends PixelScene {
 	
 	private void fall() throws IOException {
 
-		Actor.fixTime();
 		DriedRose.holdGhostHero( Dungeon.level );
 		
 		Buff.affect( Dungeon.hero, Chasm.Falling.class );
@@ -353,7 +361,6 @@ public class InterlevelScene extends PixelScene {
 	
 	private void ascend() throws IOException {
 		
-		Actor.fixTime();
 		DriedRose.holdGhostHero( Dungeon.level );
 
 		Dungeon.saveAll();
@@ -364,7 +371,6 @@ public class InterlevelScene extends PixelScene {
 	
 	private void returnTo() throws IOException {
 		
-		Actor.fixTime();
 		DriedRose.holdGhostHero( Dungeon.level );
 
 		Dungeon.saveAll();
@@ -375,7 +381,6 @@ public class InterlevelScene extends PixelScene {
 	
 	private void restore() throws IOException {
 		
-		Actor.fixTime();
 		DriedRose.clearHeldGhostHero();
 
 		GameLog.wipe();
@@ -392,7 +397,6 @@ public class InterlevelScene extends PixelScene {
 	
 	private void resurrect() throws IOException {
 		
-		Actor.fixTime();
 		DriedRose.holdGhostHero( Dungeon.level );
 		
 		if (Dungeon.level.locked) {
@@ -408,7 +412,6 @@ public class InterlevelScene extends PixelScene {
 
 	private void reset() throws IOException {
 
-		Actor.fixTime();
 		DriedRose.holdGhostHero( Dungeon.level );
 
 		SpecialRoom.resetPitRoom(Dungeon.depth+1);

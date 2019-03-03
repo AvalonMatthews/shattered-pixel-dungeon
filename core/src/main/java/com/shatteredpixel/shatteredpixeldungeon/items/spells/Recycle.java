@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,17 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.Brew;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.Elixir;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfDivination;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -47,14 +53,30 @@ public class Recycle extends InventorySpell {
 		do {
 			if (item instanceof Potion) {
 				result = Generator.random(Generator.Category.POTION);
+				if (item instanceof ExoticPotion){
+					try {
+						result = ExoticPotion.regToExo.get(result.getClass()).newInstance();
+					} catch ( Exception e ){
+						ShatteredPixelDungeon.reportException(e);
+						result = item;
+					}
+				}
 			} else if (item instanceof Scroll) {
 				result = Generator.random(Generator.Category.SCROLL);
+				if (item instanceof ExoticScroll){
+					try {
+						result = ExoticScroll.regToExo.get(result.getClass()).newInstance();
+					} catch ( Exception e ){
+						ShatteredPixelDungeon.reportException(e);
+						result = item;
+					}
+				}
 			} else if (item instanceof Plant.Seed) {
 				result = Generator.random(Generator.Category.SEED);
 			} else {
 				result = Generator.random(Generator.Category.STONE);
 			}
-		} while (result.getClass() == item.getClass());
+		} while (result.getClass() == item.getClass() || Challenges.isItemBlocked(result));
 		
 		item.detach(curUser.belongings.backpack);
 		GLog.p(Messages.get(this, "recycled", result.name()));
@@ -63,7 +85,7 @@ public class Recycle extends InventorySpell {
 	}
 	
 	public static boolean isRecyclable(Item item){
-		return item instanceof Potion ||
+		return (item instanceof Potion && !(item instanceof Elixir || item instanceof Brew)) ||
 				item instanceof Scroll ||
 				item instanceof Plant.Seed ||
 				item instanceof Runestone;

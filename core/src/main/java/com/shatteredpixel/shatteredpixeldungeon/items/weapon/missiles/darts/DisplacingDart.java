@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
-import com.shatteredpixel.shatteredpixeldungeon.mechanics.ShadowCaster;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.utils.Random;
 
@@ -37,6 +36,8 @@ public class DisplacingDart extends TippedDart {
 	{
 		image = ItemSpriteSheet.DISPLACING_DART;
 	}
+	
+	int distance = 8;
 	
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
@@ -63,9 +64,9 @@ public class DisplacingDart extends TippedDart {
 				}
 			}
 			
-			float[] probs = new float[ShadowCaster.MAX_DISTANCE+1];
+			float[] probs = new float[distance+1];
 			
-			for (int i = 0; i <= ShadowCaster.MAX_DISTANCE; i++){
+			for (int i = 0; i <= distance; i++){
 				if (positions.get(i) != null){
 					probs[i] = i - startDist;
 				}

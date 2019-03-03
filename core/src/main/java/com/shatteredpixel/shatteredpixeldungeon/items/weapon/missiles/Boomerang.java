@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ public class Boomerang extends MissileWeapon {
 		unique = true;
 		bones = false;
 		
+		tier = 1;
 	}
 
 	@Override
@@ -61,18 +62,6 @@ public class Boomerang extends MissileWeapon {
 	public int max(int lvl) {
 		return  6 +     //half the base damage of a tier-1 weapon
 				2 * lvl;//scales the same as a tier 1 weapon
-	}
-
-	@Override
-	public int STRReq(int lvl) {
-		lvl = Math.max(0, lvl);
-		//strength req decreases at +1,+3,+6,+10,etc.
-		return 9 - (int)(Math.sqrt(8 * lvl + 1) - 1)/2;
-	}
-
-	@Override
-	public boolean isUpgradable() {
-		return true;
 	}
 	
 	@Override

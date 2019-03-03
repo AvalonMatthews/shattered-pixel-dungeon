@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ public class Item implements Bundlable {
 	
 	protected static final float TIME_TO_THROW		= 1.0f;
 	protected static final float TIME_TO_PICK_UP	= 1.0f;
-	protected static final float TIME_TO_DROP		= 0.5f;
+	protected static final float TIME_TO_DROP		= 1.0f;
 	
 	public static final String AC_DROP		= "DROP";
 	public static final String AC_THROW		= "THROW";
@@ -288,7 +288,7 @@ public class Item implements Bundlable {
 	}
 	
 	public boolean isSimilar( Item item ) {
-		return getClass() == item.getClass();
+		return level == item.level && getClass() == item.getClass();
 	}
 
 	protected void onDetach(){}
@@ -425,11 +425,12 @@ public class Item implements Bundlable {
 		return 0;
 	}
 	
-	public static Item virtual( Class<? extends Item> cl ) {
+	public Item virtual(){
 		try {
 			
-			Item item = (Item)cl.newInstance();
+			Item item = getClass().newInstance();
 			item.quantity = 0;
+			item.level = level;
 			return item;
 			
 		} catch (Exception e) {
@@ -446,7 +447,7 @@ public class Item implements Bundlable {
 		return quantity != 1 ? Integer.toString( quantity ) : null;
 	}
 	
-	public void updateQuickslot() {
+	public static void updateQuickslot() {
 			QuickSlotButton.refresh();
 	}
 	
@@ -517,6 +518,7 @@ public class Item implements Bundlable {
 							new Callback() {
 						@Override
 						public void call() {
+							curUser = user;
 							Item.this.detach(user.belongings.backpack).onThrow(cell);
 							user.spendAndNext(delay);
 						}
@@ -529,6 +531,7 @@ public class Item implements Bundlable {
 							new Callback() {
 						@Override
 						public void call() {
+							curUser = user;
 							Item.this.detach(user.belongings.backpack).onThrow(cell);
 							user.spendAndNext(delay);
 						}

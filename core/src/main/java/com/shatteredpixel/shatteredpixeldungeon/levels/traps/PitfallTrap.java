@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,10 +52,12 @@ public class PitfallTrap extends Trap {
 
 		Char ch = Actor.findChar( pos );
 
-		if (ch == Dungeon.hero){
-			Chasm.heroFall( pos );
-		} else if (ch != null){
-			Chasm.mobFall((Mob)ch);
+		if (ch != null && !ch.flying) {
+			if (ch == Dungeon.hero) {
+				Chasm.heroFall(pos);
+			} else {
+				Chasm.mobFall((Mob) ch);
+			}
 		}
 	}
 

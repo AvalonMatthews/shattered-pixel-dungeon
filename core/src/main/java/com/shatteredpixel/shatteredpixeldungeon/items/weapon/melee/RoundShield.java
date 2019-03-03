@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 public class RoundShield extends MeleeWeapon {
@@ -41,5 +42,13 @@ public class RoundShield extends MeleeWeapon {
 	@Override
 	public int defenseFactor( Char owner ) {
 		return 5+2*level();     //5 extra defence, plus 2 per level;
+	}
+	
+	public String statsInfo(){
+		if (isIdentified()){
+			return Messages.get(this, "stats_desc", 5+2*level());
+		} else {
+			return Messages.get(this, "typical_stats_desc", 5);
+		}
 	}
 }

@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,9 +86,15 @@ public class SummoningTrap extends Trap {
 		}
 
 		//important to process the visuals and pressing of cells last, so spawned mobs have a chance to occupy cells first
+		Trap t;
 		for (Mob mob : mobs){
+			//manually trigger traps first to avoid sfx spam
+			if ((t = Dungeon.level.traps.get(mob.pos)) != null && t.active){
+				t.disarm();
+				t.reveal();
+				t.activate();
+			}
 			ScrollOfTeleportation.appear(mob, mob.pos);
-			//so hidden traps are triggered as well
 			Dungeon.level.press(mob.pos, mob, true);
 		}
 

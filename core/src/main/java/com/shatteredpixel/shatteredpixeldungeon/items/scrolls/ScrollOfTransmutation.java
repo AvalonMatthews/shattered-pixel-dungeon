@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.Brew;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.Elixir;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
@@ -53,9 +56,14 @@ public class ScrollOfTransmutation extends InventoryScroll {
 	}
 	
 	public static boolean canTransmute(Item item){
-		return item instanceof MagesStaff || item instanceof MeleeWeapon || item instanceof Potion
-				|| item instanceof Scroll || item instanceof Ring || item instanceof Wand
-				|| item instanceof Plant.Seed || item instanceof Artifact;
+		return item instanceof MeleeWeapon ||
+				(item instanceof Potion && !(item instanceof Elixir || item instanceof Brew)) ||
+				item instanceof Scroll ||
+				item instanceof Ring ||
+				item instanceof Wand ||
+				item instanceof Plant.Seed ||
+				item instanceof Runestone ||
+				item instanceof Artifact;
 	}
 	
 	@Override
@@ -76,7 +84,9 @@ public class ScrollOfTransmutation extends InventoryScroll {
 		} else if (item instanceof Wand) {
 			result = changeWand( (Wand)item );
 		} else if (item instanceof Plant.Seed) {
-			result = changeSeed( (Plant.Seed)item );
+			result = changeSeed((Plant.Seed) item);
+		} else if (item instanceof Runestone) {
+			result = changeStone((Runestone) item);
 		} else if (item instanceof Artifact) {
 			result = changeArtifact( (Artifact)item );
 		} else {
@@ -215,6 +225,17 @@ public class ScrollOfTransmutation extends InventoryScroll {
 		do {
 			n = (Plant.Seed)Generator.random( Generator.Category.SEED );
 		} while (n.getClass() == s.getClass());
+		
+		return n;
+	}
+	
+	private Runestone changeStone( Runestone r ) {
+		
+		Runestone n;
+		
+		do {
+			n = (Runestone) Generator.random( Generator.Category.STONE );
+		} while (n.getClass() == r.getClass());
 		
 		return n;
 	}

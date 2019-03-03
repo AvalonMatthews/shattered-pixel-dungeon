@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ public class GridTileMap extends DungeonTilemap {
 	protected int getTileVisual(int pos, int tile, boolean flat) {
 		if (gridSetting == -1 || (pos % mapWidth) % 2 != (pos / mapWidth) % 2){
 			return -1;
-		} else if (DungeonTileSheet.floorTile(tile) || tile == Terrain.HIGH_GRASS) {
+		} else if (DungeonTileSheet.floorTile(tile) || tile == Terrain.HIGH_GRASS || tile == Terrain.FURROWED_GRASS) {
 			return gridSetting;
 		} else if (DungeonTileSheet.doorTile(tile)){
 			if (DungeonTileSheet.wallStitcheable(map[pos - mapWidth])){

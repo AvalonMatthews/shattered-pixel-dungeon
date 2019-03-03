@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.armor.curses;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
@@ -48,7 +50,16 @@ public class Overgrowth extends Armor.Glyph {
 			
 			Plant p = s.couch(defender.pos, null);
 			
-			p.activate();
+			//momentarily revoke warden benefits, otherwise this curse would be incredibly powerful
+			if (defender instanceof Hero && ((Hero) defender).subClass == HeroSubClass.WARDEN){
+				((Hero) defender).subClass = HeroSubClass.NONE;
+				p.activate( defender );
+				((Hero) defender).subClass = HeroSubClass.WARDEN;
+			} else {
+				p.activate( defender );
+			}
+			
+			
 			CellEmitter.get( defender.pos ).burst( LeafParticle.LEVEL_SPECIFIC, 10 );
 			
 		}

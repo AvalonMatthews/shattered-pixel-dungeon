@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,6 +139,11 @@ public class CloakOfShadows extends Artifact {
 	public void charge(Hero target) {
 		if (charge < chargeCap) {
 			partialCharge += 0.25f;
+			if (partialCharge >= 1){
+				partialCharge--;
+				charge++;
+				updateQuickslot();
+			}
 		}
 	}
 	
@@ -179,8 +184,9 @@ public class CloakOfShadows extends Artifact {
 			if (charge < chargeCap) {
 				LockedFloor lock = target.buff(LockedFloor.class);
 				if (!stealthed && (lock == null || lock.regenOn())) {
-					float turnsToCharge = (50 - (chargeCap - charge));
-					if (level() > 7) turnsToCharge -= 10*(level() - 7)/3f;
+					float missing = (chargeCap - charge);
+					if (level() > 7) missing += 5*(level() - 7)/3f;
+					float turnsToCharge = (45 - missing);
 					partialCharge += (1f / turnsToCharge);
 				}
 

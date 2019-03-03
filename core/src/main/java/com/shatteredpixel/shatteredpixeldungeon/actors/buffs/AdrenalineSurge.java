@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,11 +32,12 @@ public class AdrenalineSurge extends Buff {
 	}
 	
 	private int boost;
-	private static final float INTERVAL = TICK * 800f;
+	private float interval;
 	
-	public void reset(){
-		boost = 2;
-		spend(INTERVAL - cooldown());
+	public void reset(int boost, float interval){
+		this.boost = boost;
+		this.interval = interval;
+		spend(interval - cooldown());
 	}
 	
 	public int boost(){
@@ -47,7 +48,7 @@ public class AdrenalineSurge extends Buff {
 	public boolean act() {
 		boost --;
 		if (boost > 0){
-			spend( INTERVAL );
+			spend( interval );
 		} else {
 			detach();
 		}
@@ -70,16 +71,24 @@ public class AdrenalineSurge extends Buff {
 	}
 	
 	private static final String BOOST	    = "boost";
+	private static final String INTERVAL	    = "interval";
 	
 	@Override
 	public void storeInBundle( Bundle bundle ) {
 		super.storeInBundle( bundle );
 		bundle.put( BOOST, boost );
+		bundle.put( INTERVAL, interval );
 	}
 	
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
 		boost = bundle.getInt( BOOST );
+		//pre-0.7.1
+		if (bundle.contains(INTERVAL)) {
+			interval = bundle.getFloat(INTERVAL);
+		} else {
+			interval = 800f;
+		}
 	}
 }

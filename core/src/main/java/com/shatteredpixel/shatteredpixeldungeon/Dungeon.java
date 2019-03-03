@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CavesBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CavesLevel;
@@ -64,7 +66,6 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.shatteredpixel.shatteredpixeldungeon.utils.DungeonSeed;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndResurrect;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
@@ -362,7 +363,9 @@ public class Dungeon {
 	@SuppressWarnings("deprecation")
 	public static void switchLevel( final Level level, int pos ) {
 		
-		if (pos < 0 || pos >= level.length()){
+		if (pos == -2){
+			pos = level.exit;
+		} else if (pos < 0 || pos >= level.length()){
 			pos = level.entrance;
 		}
 		
@@ -395,6 +398,35 @@ public class Dungeon {
 		hero.viewDistance = light == null ? level.viewDistance : Math.max( Light.DISTANCE, level.viewDistance );
 		
 		hero.curAction = hero.lastAction = null;
+		
+		//pre-0.7.1 saves. Adjusting for spirit bows in weapon slot or with upgrades.
+		SpiritBow bow;
+		if (hero.belongings.weapon instanceof SpiritBow){
+			bow = (SpiritBow)hero.belongings.weapon;
+			hero.belongings.weapon = null;
+			
+			if (!bow.collect()){
+				level.drop(bow, hero.pos);
+			}
+		} else {
+			bow = hero.belongings.getItem(SpiritBow.class);
+		}
+		
+		//pre-0.7.1 saves. refunding upgrades previously spend on a boomerang
+		if (bow != null && bow.spentUpgrades() > 0){
+			ScrollOfUpgrade refund = new ScrollOfUpgrade();
+			refund.quantity(bow.spentUpgrades());
+			bow.level(0);
+			
+			//to prevent exploits, some SoU are lost in the conversion of a boomerang higher than +1
+			if (refund.quantity() > 1){
+				refund.quantity(1 + (int)Math.floor((refund.quantity()-1)*0.8f));
+			}
+			
+			if (!refund.collect()){
+				level.drop(refund, hero.pos);
+			}
+		}
 		
 		observe();
 		try {
@@ -551,11 +583,6 @@ public class Dungeon {
 
 			GamesInProgress.set( GamesInProgress.curSlot, depth, challenges, hero );
 
-		} else if (WndResurrect.instance != null) {
-			
-			WndResurrect.instance.hide();
-			Hero.reallyDie( WndResurrect.causeOfDeath );
-			
 		}
 	}
 	
@@ -733,6 +760,7 @@ public class Dungeon {
 		Rankings.INSTANCE.submit( true, cause );
 	}
 
+	//TODO hero max vision is now separate from shadowcaster max vision. Might want to adjust.
 	public static void observe(){
 		observe( ShadowCaster.MAX_DISTANCE+1 );
 	}

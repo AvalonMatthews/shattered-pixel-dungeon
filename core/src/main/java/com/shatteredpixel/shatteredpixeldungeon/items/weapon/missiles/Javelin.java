@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,25 +27,8 @@ public class Javelin extends MissileWeapon {
 
 	{
 		image = ItemSpriteSheet.JAVELIN;
-	}
-
-	@Override
-	public int min(int lvl) {
-		return 8;
-	}
-
-	@Override
-	public int max(int lvl) {
-		return 20;
-	}
-
-	@Override
-	public int STRReq(int lvl) {
-		return 15;
+		
+		tier = 4;
 	}
 	
-	@Override
-	public int price() {
-		return 24 * quantity;
-	}
 }

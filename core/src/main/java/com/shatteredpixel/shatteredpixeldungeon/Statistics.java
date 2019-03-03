@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,11 @@ public class Statistics {
 	public static int piranhasKilled;
 	public static int ankhsUsed;
 	
+	//used for hero unlock badges
+	public static int upgradesUsed;
+	public static int sneakAttacks;
+	public static int thrownAssists;
+	
 	public static float duration;
 	
 	public static boolean qualifiedForNoKilling = false;
@@ -50,6 +55,10 @@ public class Statistics {
 		piranhasKilled	= 0;
 		ankhsUsed		= 0;
 		
+		upgradesUsed    = 0;
+		sneakAttacks    = 0;
+		thrownAssists   = 0;
+		
 		duration	= 0;
 		
 		qualifiedForNoKilling = false;
@@ -65,7 +74,13 @@ public class Statistics {
 	private static final String ALCHEMY		= "potionsCooked";
 	private static final String PIRANHAS	= "priranhas";
 	private static final String ANKHS		= "ankhsUsed";
+	
+	private static final String UPGRADES	= "upgradesUsed";
+	private static final String SNEAKS		= "sneakAttacks";
+	private static final String THROWN		= "thrownAssists";
+	
 	private static final String DURATION	= "duration";
+	
 	private static final String AMULET		= "amuletObtained";
 	
 	public static void storeInBundle( Bundle bundle ) {
@@ -76,7 +91,13 @@ public class Statistics {
 		bundle.put( ALCHEMY,	potionsCooked );
 		bundle.put( PIRANHAS,	piranhasKilled );
 		bundle.put( ANKHS,		ankhsUsed );
+		
+		bundle.put( UPGRADES,   upgradesUsed );
+		bundle.put( SNEAKS,		sneakAttacks );
+		bundle.put( THROWN,		thrownAssists );
+		
 		bundle.put( DURATION,	duration );
+		
 		bundle.put( AMULET,		amuletObtained );
 	}
 	
@@ -88,7 +109,13 @@ public class Statistics {
 		potionsCooked	= bundle.getInt( ALCHEMY );
 		piranhasKilled	= bundle.getInt( PIRANHAS );
 		ankhsUsed		= bundle.getInt( ANKHS );
+		
+		upgradesUsed    = bundle.getInt( UPGRADES );
+		sneakAttacks    = bundle.getInt( SNEAKS );
+		thrownAssists   = bundle.getInt( THROWN );
+		
 		duration		= bundle.getFloat( DURATION );
+		
 		amuletObtained	= bundle.getBoolean( AMULET );
 	}
 	

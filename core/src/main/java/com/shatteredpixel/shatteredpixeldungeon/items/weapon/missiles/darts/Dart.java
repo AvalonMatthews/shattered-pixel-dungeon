@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -34,26 +32,33 @@ public class Dart extends MissileWeapon {
 
 	{
 		image = ItemSpriteSheet.DART;
+		
+		tier = 1;
+		
+		//infinite, even with penalties
+		baseUses = 1000;
 	}
 
 	@Override
 	public int min(int lvl) {
-		return bow != null ? 4 + bow.level() : 1;
+		if (bow != null){
+			return  4 +                 //4 base
+					bow.level() + lvl;  //+1 per level or bow level
+		} else {
+			return  1 +     //1 base, down from 2
+					lvl;    //scaling unchanged
+		}
 	}
 
 	@Override
 	public int max(int lvl) {
-		return bow != null ? 12 + 3*bow.level() : 2;
-	}
-
-	@Override
-	public int STRReq(int lvl) {
-		return 9;
-	}
-	
-	@Override
-	protected float durabilityPerUse() {
-		return 0;
+		if (bow != null){
+			return  12 +                    //12 base
+					3*bow.level() + 2*lvl;  //+3 per bow level, +2 per level (default scaling +2)
+		} else {
+			return  2 +     //2 base, down from 5
+					2*lvl;  //scaling unchanged
+		}
 	}
 	
 	private static Crossbow bow;
@@ -67,12 +72,11 @@ public class Dart extends MissileWeapon {
 	}
 	
 	@Override
-	public int throwPos(Hero user, int dst) {
-		if (bow != null && bow.hasEnchant(Projecting.class, user)
-				&& !Dungeon.level.solid[dst] && Dungeon.level.distance(user.pos, dst) <= 4){
-			return dst;
+	public boolean hasEnchant(Class<? extends Enchantment> type, Char owner) {
+		if (bow != null && bow.hasEnchant(type, owner)){
+			return true;
 		} else {
-			return super.throwPos(user, dst);
+			return super.hasEnchant(type, owner);
 		}
 	}
 	
@@ -97,7 +101,7 @@ public class Dart extends MissileWeapon {
 	}
 	
 	@Override
-	public int price() {
-		return 4 * quantity;
+	public boolean isUpgradable() {
+		return false;
 	}
 }

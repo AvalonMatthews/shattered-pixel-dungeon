@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -266,7 +266,9 @@ public class MagesStaff extends MeleeWeapon {
 		String info = super.info();
 
 		if (wand == null){
-			info += "\n\n" + Messages.get(this, "no_wand");
+			//FIXME this is removed because of journal stuff, and is generally unused.
+			//perhaps reword to fit in journal better
+			//info += "\n\n" + Messages.get(this, "no_wand");
 		} else {
 			info += "\n\n" + Messages.get(this, "has_wand", Messages.get(wand, "name")) + " " + wand.statsDesc();
 		}

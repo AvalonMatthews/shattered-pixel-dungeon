@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,8 @@ public class AquaBlast extends TargetedSpell {
 				int terr = Dungeon.level.map[cell + i];
 				if (terr == Terrain.EMPTY || terr == Terrain.GRASS ||
 						terr == Terrain.EMBERS || terr == Terrain.EMPTY_SP ||
-						terr == Terrain.HIGH_GRASS || terr == Terrain.EMPTY_DECO) {
+						terr == Terrain.HIGH_GRASS || terr == Terrain.FURROWED_GRASS ||
+						terr == Terrain.EMPTY_DECO) {
 					Level.set(cell + i, Terrain.WATER);
 					GameScene.updateMap(cell + i);
 				}

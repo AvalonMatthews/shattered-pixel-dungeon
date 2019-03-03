@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BannerSprites;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CircleArc;
 import com.shatteredpixel.shatteredpixeldungeon.effects.EmoIcon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -130,6 +131,7 @@ public class GameScene extends PixelScene {
 	private GameLog log;
 	
 	private BusyIndicator busy;
+	private CircleArc counter;
 	
 	private static CellSelector cellSelector;
 	
@@ -334,6 +336,11 @@ public class GameScene extends PixelScene {
 		busy.y = pane.bottom() + 1;
 		add( busy );
 		
+		counter = new CircleArc(18, 4.25f);
+		counter.color( 0x808080, true );
+		counter.camera = uiCamera;
+		counter.show(this, busy.center(), 0f);
+		
 		switch (InterlevelScene.mode) {
 		case RESURRECT:
 			ScrollOfTeleportation.appear( Dungeon.hero, Dungeon.level.entrance );
@@ -389,9 +396,12 @@ public class GameScene extends PixelScene {
 			//TODO currently items are only ported to boss rooms, so this works well
 			//might want to have a 'near entrance' function if items can be ported elsewhere
 			int pos;
+			//try to find a tile with no heap, otherwise just stick items onto a heap.
+			int tries = 100;
 			do {
 				pos = Dungeon.level.randomRespawnCell();
-			} while (Dungeon.level.heaps.get(pos) != null);
+				tries--;
+			} while (tries > 0 && Dungeon.level.heaps.get(pos) != null);
 			for (Item item : ported) {
 				Dungeon.level.drop( item, pos ).type = Heap.Type.CHEST;
 			}
@@ -515,6 +525,8 @@ public class GameScene extends PixelScene {
 				}
 			}
 		}
+
+		counter.setSweep((1f - Actor.now()%1f)%1f);
 		
 		if (Dungeon.hero.ready && Dungeon.hero.paralysed == 0) {
 			log.newLine();

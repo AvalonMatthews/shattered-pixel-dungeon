@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,14 +128,7 @@ public class CursedWand {
 			case 1:
 				cursedFX(user, bolt, new Callback() {
 					public void call() {
-						int c = Dungeon.level.map[bolt.collisionPos];
-						if (c == Terrain.EMPTY ||
-								c == Terrain.EMBERS ||
-								c == Terrain.EMPTY_DECO ||
-								c == Terrain.GRASS ||
-								c == Terrain.HIGH_GRASS) {
-							GameScene.add( Blob.seed(bolt.collisionPos, 30, Regrowth.class));
-						}
+						GameScene.add( Blob.seed(bolt.collisionPos, 30, Regrowth.class));
 						wand.wandUsed();
 					}
 				});
@@ -220,7 +213,8 @@ public class CursedWand {
 								pos == Terrain.EMBERS ||
 								pos == Terrain.EMPTY_DECO ||
 								pos == Terrain.GRASS ||
-								pos == Terrain.HIGH_GRASS) {
+								pos == Terrain.HIGH_GRASS ||
+								pos == Terrain.FURROWED_GRASS) {
 							Dungeon.level.plant((Plant.Seed) Generator.random(Generator.Category.SEED), pos);
 						}
 						wand.wandUsed();
@@ -358,14 +352,7 @@ public class CursedWand {
 			//great forest fire!
 			case 0:
 				for (int i = 0; i < Dungeon.level.length(); i++){
-					int c = Dungeon.level.map[i];
-					if (c == Terrain.EMPTY ||
-							c == Terrain.EMBERS ||
-							c == Terrain.EMPTY_DECO ||
-							c == Terrain.GRASS ||
-							c == Terrain.HIGH_GRASS) {
-						GameScene.add( Blob.seed(i, 15, Regrowth.class));
-					}
+					GameScene.add( Blob.seed(i, 15, Regrowth.class));
 				}
 				do {
 					GameScene.add(Blob.seed(Dungeon.level.randomDestination(), 10, Fire.class));

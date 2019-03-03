@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.BuildConfig;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
@@ -35,26 +36,32 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMindVision;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dagger;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Knuckles;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gloves;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Boomerang;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingKnife;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.DeviceCompat;
 
 public enum HeroClass {
 
 	WARRIOR( "warrior", HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
 	MAGE( "mage", HeroSubClass.BATTLEMAGE, HeroSubClass.WARLOCK ),
 	ROGUE( "rogue", HeroSubClass.ASSASSIN, HeroSubClass.FREERUNNER ),
-	HUNTRESS( "huntress", HeroSubClass.WARDEN, HeroSubClass.SNIPER );
+	HUNTRESS( "huntress", HeroSubClass.SNIPER, HeroSubClass.WARDEN );
 
 	private String title;
 	private HeroSubClass[] subClasses;
@@ -100,6 +107,8 @@ public enum HeroClass {
 		if (Dungeon.isChallenged(Challenges.NO_FOOD)){
 			new SmallRation().collect();
 		}
+		
+		new ScrollOfIdentify().identify();
 
 	}
 
@@ -129,7 +138,9 @@ public enum HeroClass {
 		
 		new PotionBandolier().collect();
 		Dungeon.LimitedDrops.POTION_BANDOLIER.drop();
+		
 		new PotionOfHealing().identify();
+		new ScrollOfRage().identify();
 	}
 
 	private static void initMage( Hero hero ) {
@@ -144,7 +155,9 @@ public enum HeroClass {
 
 		new ScrollHolder().collect();
 		Dungeon.LimitedDrops.SCROLL_HOLDER.drop();
+		
 		new ScrollOfUpgrade().identify();
+		new PotionOfLiquidFlame().identify();
 	}
 
 	private static void initRogue( Hero hero ) {
@@ -162,20 +175,24 @@ public enum HeroClass {
 
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
+		
 		new ScrollOfMagicMapping().identify();
+		new PotionOfInvisibility().identify();
 	}
 
 	private static void initHuntress( Hero hero ) {
 
-		(hero.belongings.weapon = new Knuckles()).identify();
-		Boomerang boomerang = new Boomerang();
-		boomerang.identify().collect();
+		(hero.belongings.weapon = new Gloves()).identify();
+		SpiritBow bow = new SpiritBow();
+		bow.identify().collect();
 
-		Dungeon.quickslot.setSlot(0, boomerang);
+		Dungeon.quickslot.setSlot(0, bow);
 
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
+		
 		new PotionOfMindVision().identify();
+		new ScrollOfLullaby().identify();
 	}
 	
 	public String title() {
@@ -187,59 +204,82 @@ public enum HeroClass {
 	}
 	
 	public String spritesheet() {
-		
 		switch (this) {
-		case WARRIOR:
-			return Assets.WARRIOR;
-		case MAGE:
-			return Assets.MAGE;
-		case ROGUE:
-			return Assets.ROGUE;
-		case HUNTRESS:
-			return Assets.HUNTRESS;
+			case WARRIOR: default:
+				return Assets.WARRIOR;
+			case MAGE:
+				return Assets.MAGE;
+			case ROGUE:
+				return Assets.ROGUE;
+			case HUNTRESS:
+				return Assets.HUNTRESS;
 		}
-		
-		return null;
 	}
 	
 	public String[] perks() {
-		
 		switch (this) {
-		case WARRIOR:
-			return new String[]{
-					Messages.get(HeroClass.class, "warrior_perk1"),
-					Messages.get(HeroClass.class, "warrior_perk2"),
-					Messages.get(HeroClass.class, "warrior_perk3"),
-					Messages.get(HeroClass.class, "warrior_perk4"),
-					Messages.get(HeroClass.class, "warrior_perk5"),
-			};
-		case MAGE:
-			return new String[]{
-					Messages.get(HeroClass.class, "mage_perk1"),
-					Messages.get(HeroClass.class, "mage_perk2"),
-					Messages.get(HeroClass.class, "mage_perk3"),
-					Messages.get(HeroClass.class, "mage_perk4"),
-					Messages.get(HeroClass.class, "mage_perk5"),
-			};
-		case ROGUE:
-			return new String[]{
-					Messages.get(HeroClass.class, "rogue_perk1"),
-					Messages.get(HeroClass.class, "rogue_perk2"),
-					Messages.get(HeroClass.class, "rogue_perk3"),
-					Messages.get(HeroClass.class, "rogue_perk4"),
-					Messages.get(HeroClass.class, "rogue_perk5"),
-			};
-		case HUNTRESS:
-			return new String[]{
-					Messages.get(HeroClass.class, "huntress_perk1"),
-					Messages.get(HeroClass.class, "huntress_perk2"),
-					Messages.get(HeroClass.class, "huntress_perk3"),
-					Messages.get(HeroClass.class, "huntress_perk4"),
-					Messages.get(HeroClass.class, "huntress_perk5"),
-			};
+			case WARRIOR: default:
+				return new String[]{
+						Messages.get(HeroClass.class, "warrior_perk1"),
+						Messages.get(HeroClass.class, "warrior_perk2"),
+						Messages.get(HeroClass.class, "warrior_perk3"),
+						Messages.get(HeroClass.class, "warrior_perk4"),
+						Messages.get(HeroClass.class, "warrior_perk5"),
+				};
+			case MAGE:
+				return new String[]{
+						Messages.get(HeroClass.class, "mage_perk1"),
+						Messages.get(HeroClass.class, "mage_perk2"),
+						Messages.get(HeroClass.class, "mage_perk3"),
+						Messages.get(HeroClass.class, "mage_perk4"),
+						Messages.get(HeroClass.class, "mage_perk5"),
+				};
+			case ROGUE:
+				return new String[]{
+						Messages.get(HeroClass.class, "rogue_perk1"),
+						Messages.get(HeroClass.class, "rogue_perk2"),
+						Messages.get(HeroClass.class, "rogue_perk3"),
+						Messages.get(HeroClass.class, "rogue_perk4"),
+						Messages.get(HeroClass.class, "rogue_perk5"),
+				};
+			case HUNTRESS:
+				return new String[]{
+						Messages.get(HeroClass.class, "huntress_perk1"),
+						Messages.get(HeroClass.class, "huntress_perk2"),
+						Messages.get(HeroClass.class, "huntress_perk3"),
+						Messages.get(HeroClass.class, "huntress_perk4"),
+						Messages.get(HeroClass.class, "huntress_perk5"),
+				};
 		}
+	}
+	
+	public boolean isUnlocked(){
+		//always unlock on debug builds
+		if (DeviceCompat.isDebug()) return true;
 		
-		return null;
+		switch (this){
+			case WARRIOR: default:
+				return true;
+			case MAGE:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_MAGE);
+			case ROGUE:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_ROGUE);
+			case HUNTRESS:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_HUNTRESS);
+		}
+	}
+	
+	public String unlockMsg() {
+		switch (this){
+			case WARRIOR: default:
+				return "";
+			case MAGE:
+				return Messages.get(HeroClass.class, "mage_unlock");
+			case ROGUE:
+				return Messages.get(HeroClass.class, "rogue_unlock");
+			case HUNTRESS:
+				return Messages.get(HeroClass.class, "huntress_unlock");
+		}
 	}
 
 	private static final String CLASS	= "class";

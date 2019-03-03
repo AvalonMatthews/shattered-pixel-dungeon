@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
@@ -111,8 +112,8 @@ public class King extends Mob {
 	@Override
 	protected boolean canAttack( Char enemy ) {
 		return canTryToSummon() ?
-			pos == ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) :
-			Dungeon.level.adjacent( pos, enemy.pos );
+				pos == ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) :
+				Dungeon.level.adjacent( pos, enemy.pos );
 	}
 	
 	private boolean canTryToSummon() {
@@ -125,15 +126,15 @@ public class King extends Mob {
 	}
 	
 	@Override
-	public boolean attack( Char enemy ) {
+	protected boolean act() {
 		if (canTryToSummon() && pos == ((CityBossLevel)Dungeon.level).pedestal( nextPedestal )) {
 			summon();
 			return true;
 		} else {
-			if (Actor.findChar( ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) ) == enemy) {
+			if (enemy != null && Actor.findChar( ((CityBossLevel)Dungeon.level).pedestal( nextPedestal ) ) == enemy) {
 				nextPedestal = !nextPedestal;
 			}
-			return super.attack(enemy);
+			return super.act();
 		}
 	}
 
@@ -218,6 +219,7 @@ public class King extends Mob {
 		}
 		
 		yell( Messages.get(this, "arise") );
+		spend( TICK );
 	}
 	
 	@Override
@@ -229,6 +231,8 @@ public class King extends Mob {
 	
 	{
 		resistances.add( WandOfDisintegration.class );
+		resistances.add( ToxicGas.class );
+		resistances.add( Burning.class );
 	}
 	
 	{

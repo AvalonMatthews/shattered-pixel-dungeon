@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2018 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Random;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -36,13 +38,21 @@ public class RingOfWealth extends Ring {
 	
 	private float triesToDrop = 0;
 	
+	public String statsInfo() {
+		if (isIdentified()){
+			return Messages.get(this, "stats", new DecimalFormat("#.##").format(100f * (Math.pow(1.2f, soloBonus()) - 1f)));
+		} else {
+			return Messages.get(this, "typical_stats", new DecimalFormat("#.##").format(20f));
+		}
+	}
+	
 	@Override
 	protected RingBuff buff( ) {
 		return new Wealth();
 	}
 	
 	public static float dropChanceMultiplier( Char target ){
-		return (float)Math.pow(1.15, getBonus(target, Wealth.class));
+		return (float)Math.pow(1.2, getBonus(target, Wealth.class));
 	}
 	
 	public static ArrayList<Item> tryRareDrop(Char target, int tries ){
