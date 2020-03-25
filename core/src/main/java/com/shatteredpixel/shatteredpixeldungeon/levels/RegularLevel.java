@@ -23,9 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.Bones;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -141,22 +139,6 @@ public abstract class RegularLevel extends Level {
 	
 	protected abstract Painter painter();
 	
-	protected float waterFill(){
-		return 0;
-	}
-	
-	protected int waterSmoothing(){
-		return 0;
-	}
-	
-	protected float grassFill(){
-		return 0;
-	}
-	
-	protected int grassSmoothing(){
-		return 0;
-	}
-	
 	protected int nTraps() {
 		return Random.NormalIntRange( 1, 3+(Dungeon.depth/3) );
 	}
@@ -180,25 +162,10 @@ public abstract class RegularLevel extends Level {
 		}
 	}
 	
-	private ArrayList<Class<?extends Mob>> mobsToSpawn = new ArrayList<>();
-	
-	@Override
-	public Mob createMob() {
-		if (mobsToSpawn == null || mobsToSpawn.isEmpty())
-			mobsToSpawn = Bestiary.getMobRotation(Dungeon.depth);
-		
-		try {
-			return mobsToSpawn.remove(0).newInstance();
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-		}
-	}
-	
 	@Override
 	protected void createMobs() {
-		//on floor 1, 10 rats are created so the player can get level 2.
-		int mobsToSpawn = Dungeon.depth == 1 ? 10 : nMobs();
+		//on floor 1, 8 pre-set mobs are created so the player can get level 2.
+		int mobsToSpawn = Dungeon.depth == 1 ? 8 : nMobs();
 
 		ArrayList<Room> stdRooms = new ArrayList<>();
 		for (Room room : rooms) {
@@ -212,27 +179,30 @@ public abstract class RegularLevel extends Level {
 		Iterator<Room> stdRoomIter = stdRooms.iterator();
 
 		while (mobsToSpawn > 0) {
-			if (!stdRoomIter.hasNext())
-				stdRoomIter = stdRooms.iterator();
-			Room roomToSpawn = stdRoomIter.next();
-
 			Mob mob = createMob();
-			mob.pos = pointToCell(roomToSpawn.random());
+			Room roomToSpawn;
+			
+			if (!stdRoomIter.hasNext()) {
+				stdRoomIter = stdRooms.iterator();
+			}
+			roomToSpawn = stdRoomIter.next();
+			
+			do {
+				mob.pos = pointToCell(roomToSpawn.random());
+			} while (findMob(mob.pos) != null || !passable[mob.pos] || mob.pos == exit);
 
-			if (findMob(mob.pos) == null && passable[mob.pos] && mob.pos != exit) {
+			mobsToSpawn--;
+			mobs.add(mob);
+
+			if (mobsToSpawn > 0 && Random.Int(4) == 0){
+				mob = createMob();
+				
+				do {
+					mob.pos = pointToCell(roomToSpawn.random());
+				} while (findMob(mob.pos) != null || !passable[mob.pos] || mob.pos == exit);
+
 				mobsToSpawn--;
 				mobs.add(mob);
-
-				//TODO: perhaps externalize this logic into a method. Do I want to make mobs more likely to clump deeper down?
-				if (mobsToSpawn > 0 && Random.Int(4) == 0){
-					mob = createMob();
-					mob.pos = pointToCell(roomToSpawn.random());
-
-					if (findMob(mob.pos)  == null && passable[mob.pos] && mob.pos != exit) {
-						mobsToSpawn--;
-						mobs.add(mob);
-					}
-				}
 			}
 		}
 
@@ -479,7 +449,6 @@ public abstract class RegularLevel extends Level {
 	public void storeInBundle( Bundle bundle ) {
 		super.storeInBundle( bundle );
 		bundle.put( "rooms", rooms );
-		bundle.put( "mobs_to_spawn", mobsToSpawn.toArray(new Class[0]));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -494,12 +463,6 @@ public abstract class RegularLevel extends Level {
 				roomEntrance = r;
 			} else if (r instanceof ExitRoom ){
 				roomExit = r;
-			}
-		}
-		
-		if (bundle.contains( "mobs_to_spawn" )) {
-			for (Class<? extends Mob> mob : bundle.getClassArray("mobs_to_spawn")) {
-				if (mob != null) mobsToSpawn.add(mob);
 			}
 		}
 	}

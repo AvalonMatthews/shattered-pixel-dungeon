@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
@@ -31,14 +32,13 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Archs;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndError;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndRanking;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.ui.Button;
 import com.watabou.utils.GameMath;
@@ -72,10 +72,12 @@ public class RankingsScene extends PixelScene {
 		
 		Rankings.INSTANCE.load();
 
-		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9);
+		RenderedTextBlock title = PixelScene.renderTextBlock( Messages.get(this, "title"), 9);
 		title.hardlight(Window.TITLE_COLOR);
-		title.x = (w - title.width()) / 2f;
-		title.y = (16 - title.baseLine()) / 2f;
+		title.setPos(
+				(w - title.width()) / 2f,
+				(20 - title.height()) / 2f
+		);
 		align(title);
 		add(title);
 		
@@ -104,38 +106,29 @@ public class RankingsScene extends PixelScene {
 			}
 			
 			if (Rankings.INSTANCE.totalNumber >= Rankings.TABLE_SIZE) {
-				RenderedText label = PixelScene.renderText( Messages.get(this, "total") + " ", 8 );
+				
+				RenderedTextBlock label = PixelScene.renderTextBlock( 8 );
 				label.hardlight( 0xCCCCCC );
+				label.setHightlighting(true, Window.SHPX_COLOR);
+				label.text( Messages.get(this, "total") + " _" + Rankings.INSTANCE.wonNumber + "_/" + Rankings.INSTANCE.totalNumber );
 				add( label );
-
-				RenderedText won = PixelScene.renderText( Integer.toString( Rankings.INSTANCE.wonNumber ), 8 );
-				won.hardlight( Window.SHPX_COLOR );
-				add( won );
-
-				RenderedText total = PixelScene.renderText( "/" + Rankings.INSTANCE.totalNumber, 8 );
-				total.hardlight( 0xCCCCCC );
-				total.x = (w - total.width()) / 2;
-				total.y = top + pos * rowHeight + GAP;
-				add( total );
-
-				float tw = label.width() + won.width() + total.width();
-				label.x = (w - tw) / 2;
-				won.x = label.x + label.width();
-				total.x = won.x + won.width();
-				label.y = won.y = total.y = h - label.height() - GAP;
-
+				
+				label.setPos(
+						(w - label.width()) / 2,
+						h - label.height() - 2*GAP
+				);
 				align(label);
-				align(total);
-				align(won);
 
 			}
 			
 		} else {
 
-			RenderedText noRec = PixelScene.renderText(Messages.get(this, "no_games"), 8);
+			RenderedTextBlock noRec = PixelScene.renderTextBlock(Messages.get(this, "no_games"), 8);
 			noRec.hardlight( 0xCCCCCC );
-			noRec.x = (w - noRec.width()) / 2;
-			noRec.y = (h - noRec.height()) / 2;
+			noRec.setPos(
+					(w - noRec.width()) / 2,
+					(h - noRec.height()) / 2
+			);
 			align(noRec);
 			add(noRec);
 			
@@ -167,7 +160,7 @@ public class RankingsScene extends PixelScene {
 		protected ItemSprite shield;
 		private Flare flare;
 		private BitmapText position;
-		private RenderedTextMultiline desc;
+		private RenderedTextBlock desc;
 		private Image steps;
 		private BitmapText depth;
 		private Image classIcon;
@@ -227,6 +220,10 @@ public class RankingsScene extends PixelScene {
 			}
 			
 			classIcon.copy( Icons.get( rec.heroClass ) );
+			if (rec.heroClass == HeroClass.ROGUE){
+				//cloak of shadows needs to be brightened a bit
+				classIcon.brightness(2f);
+			}
 		}
 		
 		@Override
@@ -240,7 +237,7 @@ public class RankingsScene extends PixelScene {
 			position = new BitmapText( PixelScene.pixelFont);
 			add( position );
 			
-			desc = renderMultiline( 7 );
+			desc = renderTextBlock( 7 );
 			add( desc );
 
 			depth = new BitmapText( PixelScene.pixelFont);
@@ -270,15 +267,17 @@ public class RankingsScene extends PixelScene {
 				flare.point( shield.center() );
 			}
 
-			classIcon.x = x + width - classIcon.width;
-			classIcon.y = shield.y;
+			classIcon.x = x + width - 16 + (16 - classIcon.width())/2f;
+			classIcon.y = shield.y + (16 - classIcon.height())/2f;
+			align(classIcon);
 
 			level.x = classIcon.x + (classIcon.width - level.width()) / 2f;
 			level.y = classIcon.y + (classIcon.height - level.height()) / 2f + 1;
 			align(level);
 
-			steps.x = x + width - steps.width - classIcon.width;
-			steps.y = shield.y;
+			steps.x = x + width - 32 + (16 - steps.width())/2f;
+			steps.y = shield.y + (16 - steps.height())/2f;
+			align(steps);
 
 			depth.x = steps.x + (steps.width - depth.width()) / 2f;
 			depth.y = steps.y + (steps.height - depth.height()) / 2f + 1;

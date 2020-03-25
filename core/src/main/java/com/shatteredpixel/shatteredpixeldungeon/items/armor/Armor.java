@@ -23,7 +23,6 @@ package com.shatteredpixel.shatteredpixeldungeon.items.armor;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -65,13 +64,12 @@ import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Armor extends EquipableItem {
-
-	private static final int HITS_TO_KNOW    = 10;
 
 	protected static final String AC_DETACH       = "DETACH";
 	
@@ -98,27 +96,36 @@ public class Armor extends EquipableItem {
 	}
 	
 	public Augment augment = Augment.NONE;
+	
 	public Glyph glyph;
+	public boolean curseInfusionBonus = false;
+	
 	private BrokenSeal seal;
 	
 	public int tier;
 	
-	private int hitsToKnow = HITS_TO_KNOW;
+	private static final int USES_TO_ID = 10;
+	private int usesLeftToID = USES_TO_ID;
+	private float availableUsesToID = USES_TO_ID/2f;
 	
 	public Armor( int tier ) {
 		this.tier = tier;
 	}
-
-	private static final String UNFAMILIRIARITY	= "unfamiliarity";
+	
+	private static final String USES_LEFT_TO_ID = "uses_left_to_id";
+	private static final String AVAILABLE_USES  = "available_uses";
 	private static final String GLYPH			= "glyph";
+	private static final String CURSE_INFUSION_BONUS = "curse_infusion_bonus";
 	private static final String SEAL            = "seal";
 	private static final String AUGMENT			= "augment";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
 		super.storeInBundle( bundle );
-		bundle.put( UNFAMILIRIARITY, hitsToKnow );
+		bundle.put( USES_LEFT_TO_ID, usesLeftToID );
+		bundle.put( AVAILABLE_USES, availableUsesToID );
 		bundle.put( GLYPH, glyph );
+		bundle.put( CURSE_INFUSION_BONUS, curseInfusionBonus );
 		bundle.put( SEAL, seal);
 		bundle.put( AUGMENT, augment);
 	}
@@ -126,16 +133,26 @@ public class Armor extends EquipableItem {
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle(bundle);
-		hitsToKnow = bundle.getInt( UNFAMILIRIARITY );
+		usesLeftToID = bundle.getInt( USES_LEFT_TO_ID );
+		availableUsesToID = bundle.getInt( AVAILABLE_USES );
 		inscribe((Glyph) bundle.get(GLYPH));
+		curseInfusionBonus = bundle.getBoolean( CURSE_INFUSION_BONUS );
 		seal = (BrokenSeal)bundle.get(SEAL);
-		//pre-0.6.5 saves
-		if (bundle.contains(AUGMENT)) augment = bundle.getEnum(AUGMENT, Augment.class);
+		
+		//pre-0.7.2 saves
+		if (bundle.contains( "unfamiliarity" )){
+			usesLeftToID = bundle.getInt( "unfamiliarity" );
+			availableUsesToID = USES_TO_ID/2f;
+		}
+		
+		augment = bundle.getEnum(AUGMENT, Augment.class);
 	}
 
 	@Override
 	public void reset() {
 		super.reset();
+		usesLeftToID = USES_TO_ID;
+		availableUsesToID = USES_TO_ID/2f;
 		//armor can be kept in bones between runs, the seal cannot.
 		seal = null;
 	}
@@ -309,7 +326,7 @@ public class Armor extends EquipableItem {
 			}
 			if (!enemyNear) speed *= (1.2f + 0.04f * level());
 		} else if (hasGlyph(Flow.class, owner) && Dungeon.level.water[owner.pos]){
-			speed *= (1.5f + 0.1f * level());
+			speed *= 2f;
 		}
 		
 		if (hasGlyph(Bulk.class, owner) &&
@@ -330,7 +347,12 @@ public class Armor extends EquipableItem {
 		
 		return stealth;
 	}
-
+	
+	@Override
+	public int level() {
+		return super.level() + (curseInfusionBonus ? 1 : 0);
+	}
+	
 	@Override
 	public Item upgrade() {
 		return upgrade( false );
@@ -340,7 +362,7 @@ public class Armor extends EquipableItem {
 
 		if (inscribe && (glyph == null || glyph.curse())){
 			inscribe( Glyph.random() );
-		} else if (!inscribe && Random.Float() > Math.pow(0.9, level())){
+		} else if (!inscribe && level() >= 4 && Random.Float(10) < Math.pow(2, level()-4)){
 			inscribe(null);
 		}
 		
@@ -358,18 +380,27 @@ public class Armor extends EquipableItem {
 			damage = glyph.proc( this, attacker, defender, damage );
 		}
 		
-		if (!levelKnown && defender instanceof Hero) {
-			if (--hitsToKnow <= 0) {
+		if (!levelKnown && defender == Dungeon.hero && availableUsesToID >= 1) {
+			availableUsesToID--;
+			usesLeftToID--;
+			if (usesLeftToID <= 0) {
 				identify();
-				GLog.w( Messages.get(Armor.class, "identify") );
+				GLog.p( Messages.get(Armor.class, "identify") );
 				Badges.validateItemLevelAquired( this );
 			}
 		}
 		
 		return damage;
 	}
-
-
+	
+	@Override
+	public void onHeroGainExp(float levelPercent, Hero hero) {
+		if (!levelKnown && isEquipped(hero) && availableUsesToID <= USES_TO_ID/2f) {
+			//gains enough uses to ID over 0.5 levels
+			availableUsesToID = Math.min(USES_TO_ID/2f, availableUsesToID + levelPercent * USES_TO_ID);
+		}
+	}
+	
 	@Override
 	public String name() {
 		return glyph != null && (cursedKnown || !glyph.curse()) ? glyph.name( super.name() ) : super.name();
@@ -490,6 +521,7 @@ public class Armor extends EquipableItem {
 	}
 
 	public Armor inscribe( Glyph glyph ) {
+		if (glyph == null || !glyph.curse()) curseInfusionBonus = false;
 		this.glyph = glyph;
 		updateQuickslot();
 		return this;
@@ -589,65 +621,45 @@ public class Armor extends EquipableItem {
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomCommon( Class<? extends Glyph> ... toIgnore ){
-			try {
-				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(common));
-				glyphs.removeAll(Arrays.asList(toIgnore));
-				if (glyphs.isEmpty()) {
-					return random();
-				} else {
-					return (Glyph) Random.element(glyphs).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(common));
+			glyphs.removeAll(Arrays.asList(toIgnore));
+			if (glyphs.isEmpty()) {
+				return random();
+			} else {
+				return (Glyph) Reflection.newInstance(Random.element(glyphs));
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomUncommon( Class<? extends Glyph> ... toIgnore ){
-			try {
-				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(uncommon));
-				glyphs.removeAll(Arrays.asList(toIgnore));
-				if (glyphs.isEmpty()) {
-					return random();
-				} else {
-					return (Glyph) Random.element(glyphs).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(uncommon));
+			glyphs.removeAll(Arrays.asList(toIgnore));
+			if (glyphs.isEmpty()) {
+				return random();
+			} else {
+				return (Glyph) Reflection.newInstance(Random.element(glyphs));
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomRare( Class<? extends Glyph> ... toIgnore ){
-			try {
-				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(rare));
-				glyphs.removeAll(Arrays.asList(toIgnore));
-				if (glyphs.isEmpty()) {
-					return random();
-				} else {
-					return (Glyph) Random.element(glyphs).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(rare));
+			glyphs.removeAll(Arrays.asList(toIgnore));
+			if (glyphs.isEmpty()) {
+				return random();
+			} else {
+				return (Glyph) Reflection.newInstance(Random.element(glyphs));
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomCurse( Class<? extends Glyph> ... toIgnore ){
-			try {
-				ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(curses));
-				glyphs.removeAll(Arrays.asList(toIgnore));
-				if (glyphs.isEmpty()) {
-					return random();
-				} else {
-					return (Glyph) Random.element(glyphs).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(curses));
+			glyphs.removeAll(Arrays.asList(toIgnore));
+			if (glyphs.isEmpty()) {
+				return random();
+			} else {
+				return (Glyph) Reflection.newInstance(Random.element(glyphs));
 			}
 		}
 		

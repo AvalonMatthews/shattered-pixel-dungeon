@@ -37,6 +37,16 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Warlock;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Yog;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfDisintegration;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfPrismaticLight;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfTransfusion;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisintegrationTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -48,9 +58,9 @@ public class RingOfElements extends Ring {
 	
 	public String statsInfo() {
 		if (isIdentified()){
-			return Messages.get(this, "stats", new DecimalFormat("#.##").format(100f * (1f - Math.pow(0.84f, soloBonus()))));
+			return Messages.get(this, "stats", new DecimalFormat("#.##").format(100f * (1f - Math.pow(0.80f, soloBonus()))));
 		} else {
-			return Messages.get(this, "typical_stats", new DecimalFormat("#.##").format(16f));
+			return Messages.get(this, "typical_stats", new DecimalFormat("#.##").format(20f));
 		}
 	}
 	
@@ -58,7 +68,7 @@ public class RingOfElements extends Ring {
 	protected RingBuff buff( ) {
 		return new Resistance();
 	}
-	
+
 	public static final HashSet<Class> RESISTS = new HashSet<>();
 	static {
 		RESISTS.add( Burning.class );
@@ -73,15 +83,25 @@ public class RingOfElements extends Ring {
 		
 		RESISTS.add( DisintegrationTrap.class );
 		RESISTS.add( GrimTrap.class );
+
+		RESISTS.add( WandOfBlastWave.class );
+		RESISTS.add( WandOfDisintegration.class );
+		RESISTS.add( WandOfFireblast.class );
+		RESISTS.add( WandOfFrost.class );
+		RESISTS.add( WandOfLightning.class );
+		RESISTS.add( WandOfLivingEarth.class );
+		RESISTS.add( WandOfMagicMissile.class );
+		RESISTS.add( WandOfPrismaticLight.class );
+		RESISTS.add( WandOfTransfusion.class );
+		RESISTS.add( WandOfWarding.Ward.class );
 		
 		RESISTS.add( ToxicGas.class );
 		RESISTS.add( Electricity.class );
 		
-		//FIXME currently this affects all attacks, not just longranged magic
-		RESISTS.add( Shaman.class );
-		RESISTS.add( Warlock.class );
-		RESISTS.add( Eye.class );
-		RESISTS.add( Yog.BurningFist.class );
+		RESISTS.add( Shaman.LightningBolt.class );
+		RESISTS.add( Warlock.DarkBolt.class );
+		RESISTS.add( Eye.DeathGaze.class );
+		RESISTS.add( Yog.BurningFist.DarkBolt.class );
 	}
 	
 	public static float resist( Char target, Class effect ){
@@ -89,7 +109,7 @@ public class RingOfElements extends Ring {
 		
 		for (Class c : RESISTS){
 			if (c.isAssignableFrom(effect)){
-				return (float)Math.pow(0.84, getBonus(target, Resistance.class));
+				return (float)Math.pow(0.80, getBonus(target, Resistance.class));
 			}
 		}
 		

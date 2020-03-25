@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BannerSprites;
@@ -41,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
@@ -56,7 +58,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.DiscardedItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
-import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTiledVisual;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTerrainTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTileSheet;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
@@ -97,6 +99,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndTradeItem;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Gizmo;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.NoosaScriptNoLighting;
@@ -211,7 +214,7 @@ public class GameScene extends PixelScene {
 		customTiles = new Group();
 		terrain.add(customTiles);
 
-		for( CustomTiledVisual visual : Dungeon.level.customTiles){
+		for( CustomTilemap visual : Dungeon.level.customTiles){
 			addCustomTile(visual);
 		}
 
@@ -227,9 +230,8 @@ public class GameScene extends PixelScene {
 		heaps = new Group();
 		add( heaps );
 		
-		int size = Dungeon.level.heaps.size();
-		for (int i=0; i < size; i++) {
-			addHeapSprite( Dungeon.level.heaps.valueAt( i ) );
+		for ( Heap heap : Dungeon.level.heaps.valueList() ) {
+			addHeapSprite( heap );
 		}
 		
 		emitters = new Group();
@@ -256,7 +258,7 @@ public class GameScene extends PixelScene {
 		customWalls = new Group();
 		add(customWalls);
 
-		for( CustomTiledVisual visual : Dungeon.level.customWalls){
+		for( CustomTilemap visual : Dungeon.level.customWalls){
 			addCustomWall(visual);
 		}
 
@@ -412,13 +414,30 @@ public class GameScene extends PixelScene {
 
 		Dungeon.hero.next();
 
-		Camera.main.target = hero;
+		switch (InterlevelScene.mode){
+			case FALL: case DESCEND: case CONTINUE:
+				Camera.main.snapTo(hero.center().x, hero.center().y - DungeonTilemap.SIZE * (defaultZoom/Camera.main.zoom));
+				break;
+			case ASCEND:
+				Camera.main.snapTo(hero.center().x, hero.center().y + DungeonTilemap.SIZE * (defaultZoom/Camera.main.zoom));
+				break;
+			default:
+				Camera.main.snapTo(hero.center().x, hero.center().y);
+		}
+		Camera.main.panTo(hero.center(), 2.5f);
 
 		if (InterlevelScene.mode != InterlevelScene.Mode.NONE) {
 			if (Dungeon.depth == Statistics.deepestFloor
 					&& (InterlevelScene.mode == InterlevelScene.Mode.DESCEND || InterlevelScene.mode == InterlevelScene.Mode.FALL)) {
 				GLog.h(Messages.get(this, "descend"), Dungeon.depth);
 				Sample.INSTANCE.play(Assets.SND_DESCEND);
+				
+				for (Char ch : Actor.chars()){
+					if (ch instanceof DriedRose.GhostHero){
+						((DriedRose.GhostHero) ch).sayAppeared();
+					}
+				}
+				
 			} else if (InterlevelScene.mode == InterlevelScene.Mode.RESET) {
 				GLog.h(Messages.get(this, "warp"));
 			} else {
@@ -447,8 +466,10 @@ public class GameScene extends PixelScene {
 
 			InterlevelScene.mode = InterlevelScene.Mode.NONE;
 
-			fadeIn();
+			
 		}
+		
+		fadeIn();
 
 	}
 	
@@ -501,7 +522,11 @@ public class GameScene extends PixelScene {
 			Actor.process();
 		}
 	};
-
+	
+	//sometimes UI changes can be prompted by the actor thread.
+	// We queue any removed element destruction, rather than destroying them in the actor thread.
+	private ArrayList<Gizmo> toDestroy = new ArrayList<>();
+	
 	@Override
 	public synchronized void update() {
 		if (Dungeon.hero == null || scene == null) {
@@ -518,6 +543,8 @@ public class GameScene extends PixelScene {
 				if (Runtime.getRuntime().availableProcessors() == 1) {
 					actorThread.setPriority(Thread.NORM_PRIORITY - 1);
 				}
+				actorThread.setName("SHPD Actor Thread");
+				Thread.currentThread().setName("SHPD Render Thread");
 				actorThread.start();
 			} else {
 				synchronized (actorThread) {
@@ -552,6 +579,11 @@ public class GameScene extends PixelScene {
 		}
 
 		cellSelector.enable(Dungeon.hero.ready);
+		
+		for (Gizmo g : toDestroy){
+			g.destroy();
+		}
+		toDestroy.clear();
 	}
 
 	private boolean tagAttack    = false;
@@ -566,9 +598,9 @@ public class GameScene extends PixelScene {
 		float tagLeft = SPDSettings.flipTags() ? 0 : uiCamera.width - scene.attack.width();
 
 		if (SPDSettings.flipTags()) {
-			scene.log.setRect(scene.attack.width(), scene.toolbar.top(), uiCamera.width - scene.attack.width(), 0);
+			scene.log.setRect(scene.attack.width(), scene.toolbar.top()-2, uiCamera.width - scene.attack.width(), 0);
 		} else {
-			scene.log.setRect(0, scene.toolbar.top(), uiCamera.width - scene.attack.width(),  0 );
+			scene.log.setRect(0, scene.toolbar.top()-2, uiCamera.width - scene.attack.width(),  0 );
 		}
 
 		float pos = scene.toolbar.top();
@@ -611,11 +643,11 @@ public class GameScene extends PixelScene {
 		}
 	}
 
-	public void addCustomTile( CustomTiledVisual visual){
+	public void addCustomTile( CustomTilemap visual){
 		customTiles.add( visual.create() );
 	}
 
-	public void addCustomWall( CustomTiledVisual visual){
+	public void addCustomWall( CustomTilemap visual){
 		customWalls.add( visual.create() );
 	}
 	
@@ -658,7 +690,7 @@ public class GameScene extends PixelScene {
 		
 		if (prompt != null) {
 			prompt.killAndErase();
-			prompt.destroy();
+			toDestroy.add(prompt);
 			prompt = null;
 		}
 		
@@ -733,6 +765,15 @@ public class GameScene extends PixelScene {
 	
 	public static void add( CharHealthIndicator indicator ){
 		if (scene != null) scene.healthIndicators.add(indicator);
+	}
+	
+	public static void add( CustomTilemap t, boolean wall ){
+		if (scene == null) return;
+		if (wall){
+			scene.addCustomWall(t);
+		} else {
+			scene.addCustomTile(t);
+		}
 	}
 	
 	public static void effect( Visual effect ) {

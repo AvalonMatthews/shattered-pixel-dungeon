@@ -24,7 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -46,20 +45,27 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Surprise;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Wound;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Lucky;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.GameMath;
+import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 
 public abstract class Mob extends Char {
@@ -147,13 +153,7 @@ public abstract class Mob extends Char {
 	}
 	
 	public CharSprite sprite() {
-		CharSprite sprite = null;
-		try {
-			sprite = spriteClass.newInstance();
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-		}
-		return sprite;
+		return Reflection.newInstance(spriteClass);
 	}
 	
 	@Override
@@ -184,6 +184,9 @@ public abstract class Mob extends Char {
 		return state.act( enemyInFOV, justAlerted );
 	}
 	
+	//FIXME this is sort of a band-aid correction for allies needing more intelligent behaviour
+	protected boolean intelligentAlly = false;
+	
 	protected Char chooseEnemy() {
 
 		Terror terror = buff( Terror.class );
@@ -194,18 +197,22 @@ public abstract class Mob extends Char {
 			}
 		}
 		
-		StoneOfAggression.Aggression aggro = buff( StoneOfAggression.Aggression.class );
-		if (aggro != null){
-			Char source = (Char)Actor.findById( aggro.object );
-			if (source != null){
-				return source;
+		//if we are an enemy, and have no target or current target isn't affected by aggression
+		//then auto-prioritize a target that is affected by aggression, even another enemy
+		if (alignment == Alignment.ENEMY
+				&& (enemy == null || enemy.buff(StoneOfAggression.Aggression.class) == null)) {
+			for (Char ch : Actor.chars()) {
+				if (ch != this && fieldOfView[ch.pos] &&
+						ch.buff(StoneOfAggression.Aggression.class) != null) {
+					return ch;
+				}
 			}
 		}
 
 		//find a new enemy if..
 		boolean newEnemy = false;
-		//we have no enemy, or the current one is dead
-		if ( enemy == null || !enemy.isAlive() || state == WANDERING)
+		//we have no enemy, or the current one is dead/missing
+		if ( enemy == null || !enemy.isAlive() || !Actor.chars().contains(enemy) || state == WANDERING)
 			newEnemy = true;
 		//We are an ally, and current enemy is another ally.
 		else if (alignment == Alignment.ALLY && enemy.alignment == Alignment.ALLY)
@@ -244,12 +251,14 @@ public abstract class Mob extends Char {
 				
 			//if the mob is an ally...
 			} else if ( alignment == Alignment.ALLY ) {
-				//look for hostile mobs that are not passive to attack
+				//look for hostile mobs to attack
 				for (Mob mob : Dungeon.level.mobs)
-					if (mob.alignment == Alignment.ENEMY
-							&& fieldOfView[mob.pos]
-							&& mob.state != mob.PASSIVE)
-						enemies.add(mob);
+					if (mob.alignment == Alignment.ENEMY && fieldOfView[mob.pos])
+						//intelligent allies do not target mobs which are passive, wandering, or asleep
+						if (!intelligentAlly ||
+								(mob.state != mob.SLEEPING && mob.state != mob.PASSIVE && mob.state != mob.WANDERING)) {
+							enemies.add(mob);
+						}
 				
 			//if the mob is an enemy...
 			} else if (alignment == Alignment.ENEMY) {
@@ -291,18 +300,6 @@ public abstract class Mob extends Char {
 
 		} else
 			return enemy;
-	}
-
-	protected boolean moveSprite( int from, int to ) {
-
-		if (sprite.isVisible() && (Dungeon.level.heroFOV[from] || Dungeon.level.heroFOV[to])) {
-			sprite.move( from, to );
-			return true;
-		} else {
-			sprite.turnTo(from, to);
-			sprite.place( to );
-			return true;
-		}
 	}
 	
 	@Override
@@ -451,7 +448,8 @@ public abstract class Mob extends Char {
 	@Override
 	public void updateSpriteState() {
 		super.updateSpriteState();
-		if (Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class) != null)
+		if (Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class) != null
+				|| Dungeon.hero.buff(Swiftthistle.TimeBubble.class) != null)
 			sprite.add( CharSprite.State.PARALYSED );
 	}
 	
@@ -533,8 +531,14 @@ public abstract class Mob extends Char {
 
 		if (buff(SoulMark.class) != null) {
 			int restoration = Math.min(damage, HP);
-			Dungeon.hero.buff(Hunger.class).satisfy(restoration);
-			Dungeon.hero.HP = (int)Math.ceil(Math.min(Dungeon.hero.HT, Dungeon.hero.HP+(restoration*0.33f)));
+			
+			//physical damage that doesn't come from the hero is less effective
+			if (enemy != Dungeon.hero){
+				restoration = Math.round(restoration * 0.4f);
+			}
+			
+			Buff.affect(Dungeon.hero, Hunger.class).satisfy(restoration);
+			Dungeon.hero.HP = (int)Math.ceil(Math.min(Dungeon.hero.HT, Dungeon.hero.HP+(restoration*0.4f)));
 			Dungeon.hero.sprite.emitter().burst( Speck.factory(Speck.HEALING), 1 );
 		}
 
@@ -550,6 +554,10 @@ public abstract class Mob extends Char {
 		if (state != PASSIVE){
 			state = HUNTING;
 		}
+	}
+	
+	public boolean isTargeting( Char ch){
+		return enemy == ch;
 	}
 
 	@Override
@@ -584,7 +592,7 @@ public abstract class Mob extends Char {
 				if (exp > 0) {
 					Dungeon.hero.sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "exp", exp));
 				}
-				Dungeon.hero.earnExp(exp);
+				Dungeon.hero.earnExp(exp, getClass());
 			}
 		}
 	}
@@ -602,8 +610,6 @@ public abstract class Mob extends Char {
 			if (EXP % 2 == 1) EXP += Random.Int(2);
 			EXP /= 2;
 		}
-		
-		super.die( cause );
 
 		if (alignment == Alignment.ENEMY){
 			rollToDropLoot();
@@ -612,6 +618,8 @@ public abstract class Mob extends Char {
 		if (Dungeon.hero.isAlive() && !Dungeon.level.heroFOV[pos]) {
 			GLog.i( Messages.get(this, "died") );
 		}
+		
+		super.die( cause );
 	}
 	
 	public void rollToDropLoot(){
@@ -632,11 +640,22 @@ public abstract class Mob extends Char {
 			int rolls = 1;
 			if (properties.contains(Property.BOSS)) rolls = 15;
 			else if (properties.contains(Property.MINIBOSS)) rolls = 5;
-			ArrayList<Item> bonus = RingOfWealth.tryRareDrop(Dungeon.hero, rolls);
-			if (bonus != null) {
+			ArrayList<Item> bonus = RingOfWealth.tryForBonusDrop(Dungeon.hero, rolls);
+			if (bonus != null && !bonus.isEmpty()) {
 				for (Item b : bonus) Dungeon.level.drop(b, pos).sprite.drop();
-				new Flare(8, 32).color(0xFFFF00, true).show(sprite, 2f);
+				if (RingOfWealth.latestDropWasRare){
+					new Flare(8, 48).color(0xAA00FF, true).show(sprite, 3f);
+					RingOfWealth.latestDropWasRare = false;
+				} else {
+					new Flare(8, 24).color(0xFFFFFF, true).show(sprite, 3f);
+				}
 			}
+		}
+		
+		//lucky enchant logic
+		if (Dungeon.hero.lvl <= maxLvl && buff(Lucky.LuckProc.class) != null){
+			new Flare(8, 24).color(0x00FF00, true).show(sprite, 3f);
+			Dungeon.level.drop(Lucky.genLoot(), pos).sprite.drop();
 		}
 	}
 	
@@ -858,6 +877,58 @@ public abstract class Mob extends Char {
 			spend( TICK );
 			return true;
 		}
+	}
+	
+	
+	private static ArrayList<Mob> heldAllies = new ArrayList<>();
+	
+	public static void holdAllies( Level level ){
+		heldAllies.clear();
+		for (Mob mob : level.mobs.toArray( new Mob[0] )) {
+			//preserve the ghost no matter where they are
+			if (mob instanceof DriedRose.GhostHero) {
+				((DriedRose.GhostHero) mob).clearDefensingPos();
+				level.mobs.remove( mob );
+				heldAllies.add(mob);
+				
+			//preserve intelligent allies if they are near the hero
+			} else if (mob.alignment == Alignment.ALLY
+					&& mob.intelligentAlly
+					&& Dungeon.level.distance(Dungeon.hero.pos, mob.pos) <= 3){
+				level.mobs.remove( mob );
+				heldAllies.add(mob);
+			}
+		}
+	}
+	
+	public static void restoreAllies( Level level, int pos ){
+		if (!heldAllies.isEmpty()){
+			
+			ArrayList<Integer> candidatePositions = new ArrayList<>();
+			for (int i : PathFinder.NEIGHBOURS8) {
+				if (!Dungeon.level.solid[i+pos] && level.findMob(i+pos) == null){
+					candidatePositions.add(i+pos);
+				}
+			}
+			Collections.shuffle(candidatePositions);
+			
+			for (Mob ally : heldAllies) {
+				level.mobs.add(ally);
+				ally.state = ally.WANDERING;
+				
+				if (!candidatePositions.isEmpty()){
+					ally.pos = candidatePositions.remove(0);
+				} else {
+					ally.pos = pos;
+				}
+				
+			}
+		}
+		heldAllies.clear();
+	}
+	
+	public static void clearHeldAllies(){
+		heldAllies.clear();
 	}
 }
 

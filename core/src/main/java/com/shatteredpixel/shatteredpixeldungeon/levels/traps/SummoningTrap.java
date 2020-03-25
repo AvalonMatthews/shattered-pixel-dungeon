@@ -43,10 +43,6 @@ public class SummoningTrap extends Trap {
 	@Override
 	public void activate() {
 
-		if (Dungeon.bossLevel()) {
-			return;
-		}
-
 		int nMobs = 1;
 		if (Random.Int( 2 ) == 0) {
 			nMobs++;
@@ -95,7 +91,7 @@ public class SummoningTrap extends Trap {
 				t.activate();
 			}
 			ScrollOfTeleportation.appear(mob, mob.pos);
-			Dungeon.level.press(mob.pos, mob, true);
+			Dungeon.level.occupyCell(mob);
 		}
 
 	}

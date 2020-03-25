@@ -22,7 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
-import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
@@ -35,6 +34,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
+import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.PrismaticSprite;
 import com.watabou.noosa.audio.Sample;
@@ -50,6 +52,7 @@ public class PrismaticImage extends NPC {
 		defenseSkill = 1;
 		
 		alignment = Alignment.ALLY;
+		intelligentAlly = true;
 		state = HUNTING;
 		
 		WANDERING = new Wandering();
@@ -106,8 +109,12 @@ public class PrismaticImage extends NPC {
 	@Override
 	public void die(Object cause) {
 		if (deathTimer == -1) {
-			deathTimer = 5;
-			sprite.add(CharSprite.State.PARALYSED);
+			if (cause == Chasm.class){
+				super.die( cause );
+			} else {
+				deathTimer = 5;
+				sprite.add(CharSprite.State.PARALYSED);
+			}
 		}
 	}
 	
@@ -178,6 +185,18 @@ public class PrismaticImage extends NPC {
 	}
 	
 	@Override
+	public void damage(int dmg, Object src) {
+		
+		//TODO improve this when I have proper damage source logic
+		if (hero.belongings.armor != null && hero.belongings.armor.hasGlyph(AntiMagic.class, this)
+				&& AntiMagic.RESISTS.contains(src.getClass())){
+			dmg -= AntiMagic.drRoll(hero.belongings.armor.level());
+		}
+		
+		super.damage(dmg, src);
+	}
+	
+	@Override
 	public float speed() {
 		if (hero.belongings.armor != null){
 			return hero.belongings.armor.speedFactor(this, super.speed());
@@ -208,24 +227,14 @@ public class PrismaticImage extends NPC {
 	}
 	
 	@Override
-	public boolean interact() {
-		
-		if (!Dungeon.level.passable[pos]){
+	public boolean isImmune(Class effect) {
+		if (effect == Burning.class
+				&& hero != null
+				&& hero.belongings.armor != null
+				&& hero.belongings.armor.hasGlyph(Brimstone.class, this)){
 			return true;
 		}
-		
-		int curPos = pos;
-		
-		moveSprite( pos, Dungeon.hero.pos );
-		move( Dungeon.hero.pos );
-		
-		Dungeon.hero.sprite.move( Dungeon.hero.pos, curPos );
-		Dungeon.hero.move( curPos );
-		
-		Dungeon.hero.spend( 1 / Dungeon.hero.speed() );
-		Dungeon.hero.busy();
-		
-		return true;
+		return super.isImmune(effect);
 	}
 	
 	{

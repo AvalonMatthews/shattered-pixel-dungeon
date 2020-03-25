@@ -36,15 +36,21 @@ public class Chilling extends Weapon.Enchantment {
 	
 	@Override
 	public int proc( Weapon weapon, Char attacker, Char defender, int damage ) {
-		// lvl 0 - 20%
-		// lvl 1 - 33%
-		// lvl 2 - 43%
+		// lvl 0 - 33%
+		// lvl 1 - 50%
+		// lvl 2 - 60%
 		int level = Math.max( 0, weapon.level() );
 		
-		if (Random.Int( level + 5 ) >= 4) {
+		if (Random.Int( level + 3 ) >= 2) {
 			
-			//FIXME this should probably stack chilled
-			Buff.prolong( defender, Chill.class, Random.Float( 2f, 3f ) );
+			//adds 3 turns of chill per proc, with a cap of 6 turns
+			float durationToAdd = 3f;
+			Chill existing = defender.buff(Chill.class);
+			if (existing != null){
+				durationToAdd = Math.min(durationToAdd, 6f-existing.cooldown());
+			}
+			
+			Buff.affect( defender, Chill.class, durationToAdd );
 			Splash.at( defender.sprite.center(), 0xFFB2D6FF, 5);
 
 		}

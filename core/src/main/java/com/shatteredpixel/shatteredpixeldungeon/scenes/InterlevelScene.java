@@ -28,12 +28,13 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndError;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndStory;
 import com.watabou.gltextures.TextureCache;
@@ -43,7 +44,6 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.NoosaScriptNoLighting;
-import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.SkinnedBlock;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.DeviceCompat;
@@ -80,7 +80,7 @@ public class InterlevelScene extends PixelScene {
 	private Phase phase;
 	private float timeLeft;
 	
-	private RenderedText message;
+	private RenderedTextBlock message;
 	
 	private static Thread thread;
 	private static Exception error = null;
@@ -183,9 +183,11 @@ public class InterlevelScene extends PixelScene {
 
 		String text = Messages.get(Mode.class, mode.name());
 		
-		message = PixelScene.renderText( text, 9 );
-		message.x = (Camera.main.width - message.width()) / 2;
-		message.y = (Camera.main.height - message.height()) / 2;
+		message = PixelScene.renderTextBlock( text, 9 );
+		message.setPos(
+				(Camera.main.width - message.width()) / 2,
+				(Camera.main.height - message.height()) / 2
+		);
 		align(message);
 		add( message );
 		
@@ -300,7 +302,7 @@ public class InterlevelScene extends PixelScene {
 				} );
 				thread = null;
 				error = null;
-			} else if ((int)waitingTime == 10){
+			} else if (thread != null && (int)waitingTime == 10){
 				waitingTime = 11f;
 				String s = "";
 				for (StackTraceElement t : thread.getStackTrace()){
@@ -320,7 +322,7 @@ public class InterlevelScene extends PixelScene {
 	private void descend() throws IOException {
 
 		if (Dungeon.hero == null) {
-			DriedRose.clearHeldGhostHero();
+			Mob.clearHeldAllies();
 			Dungeon.init();
 			if (noStory) {
 				Dungeon.chapters.add( WndStory.ID_SEWERS );
@@ -328,7 +330,7 @@ public class InterlevelScene extends PixelScene {
 			}
 			GameLog.wipe();
 		} else {
-			DriedRose.holdGhostHero( Dungeon.level );
+			Mob.holdAllies( Dungeon.level );
 			Dungeon.saveAll();
 		}
 
@@ -343,8 +345,8 @@ public class InterlevelScene extends PixelScene {
 	}
 	
 	private void fall() throws IOException {
-
-		DriedRose.holdGhostHero( Dungeon.level );
+		
+		Mob.holdAllies( Dungeon.level );
 		
 		Buff.affect( Dungeon.hero, Chasm.Falling.class );
 		Dungeon.saveAll();
@@ -361,7 +363,7 @@ public class InterlevelScene extends PixelScene {
 	
 	private void ascend() throws IOException {
 		
-		DriedRose.holdGhostHero( Dungeon.level );
+		Mob.holdAllies( Dungeon.level );
 
 		Dungeon.saveAll();
 		Dungeon.depth--;
@@ -371,7 +373,7 @@ public class InterlevelScene extends PixelScene {
 	
 	private void returnTo() throws IOException {
 		
-		DriedRose.holdGhostHero( Dungeon.level );
+		Mob.holdAllies( Dungeon.level );
 
 		Dungeon.saveAll();
 		Dungeon.depth = returnDepth;
@@ -381,7 +383,7 @@ public class InterlevelScene extends PixelScene {
 	
 	private void restore() throws IOException {
 		
-		DriedRose.clearHeldGhostHero();
+		Mob.clearHeldAllies();
 
 		GameLog.wipe();
 
@@ -397,7 +399,7 @@ public class InterlevelScene extends PixelScene {
 	
 	private void resurrect() throws IOException {
 		
-		DriedRose.holdGhostHero( Dungeon.level );
+		Mob.holdAllies( Dungeon.level );
 		
 		if (Dungeon.level.locked) {
 			Dungeon.hero.resurrect( Dungeon.depth );
@@ -411,8 +413,8 @@ public class InterlevelScene extends PixelScene {
 	}
 
 	private void reset() throws IOException {
-
-		DriedRose.holdGhostHero( Dungeon.level );
+		
+		Mob.holdAllies( Dungeon.level );
 
 		SpecialRoom.resetPitRoom(Dungeon.depth+1);
 

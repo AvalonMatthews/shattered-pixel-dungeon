@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -55,6 +56,11 @@ public class Sheep extends NPC {
 		return true;
 	}
 
+	@Override
+	public int defenseSkill(Char enemy) {
+		return 100_000_000;
+	}
+	
 	@Override
 	public void damage( int dmg, Object src ) {
 	}

@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
@@ -84,9 +85,10 @@ public class HornOfPlenty extends Artifact {
 			else if (charge == 0)  GLog.i( Messages.get(this, "no_food") );
 			else {
 				//consume as much food as it takes to be full, to a minimum of 1
-				int chargesToUse = Math.max( 1, hero.buff(Hunger.class).hunger() / (int)(Hunger.STARVING/10));
+				Hunger hunger = Buff.affect(Dungeon.hero, Hunger.class);
+				int chargesToUse = Math.max( 1, hunger.hunger() / (int)(Hunger.STARVING/10));
 				if (chargesToUse > charge) chargesToUse = charge;
-				hero.buff(Hunger.class).satisfy((Hunger.STARVING/10) * chargesToUse);
+				hunger.satisfy((Hunger.STARVING/10) * chargesToUse);
 
 				Food.foodProc( hero );
 
@@ -131,11 +133,17 @@ public class HornOfPlenty extends Artifact {
 			if (partialCharge >= 1){
 				partialCharge--;
 				charge++;
-				updateQuickslot();
+				
 				if (charge == chargeCap){
 					GLog.p( Messages.get(HornOfPlenty.class, "full") );
 					partialCharge = 0;
 				}
+				
+				if (charge >= 15)       image = ItemSpriteSheet.ARTIFACT_HORN4;
+				else if (charge >= 10)  image = ItemSpriteSheet.ARTIFACT_HORN3;
+				else if (charge >= 5)   image = ItemSpriteSheet.ARTIFACT_HORN2;
+				
+				updateQuickslot();
 			}
 		}
 	}
@@ -200,16 +208,7 @@ public class HornOfPlenty extends Artifact {
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
-		
-		if (bundle.contains(STORED)){
-			storedFoodEnergy = bundle.getInt(STORED);
-			
-		//logic for pre-0.6.1 saves
-		} else {
-			//keep partial levels
-			storedFoodEnergy = (int)(level()%3 * Hunger.HUNGRY/3);
-			level(level()/3);
-		}
+		storedFoodEnergy = bundle.getInt(STORED);
 		
 		if (charge >= 15)       image = ItemSpriteSheet.ARTIFACT_HORN4;
 		else if (charge >= 10)  image = ItemSpriteSheet.ARTIFACT_HORN3;

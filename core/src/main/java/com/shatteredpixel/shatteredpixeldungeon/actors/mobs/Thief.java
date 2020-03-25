@@ -96,7 +96,7 @@ public class Thief extends Mob {
 		if (item != null) {
 			Dungeon.level.drop( item, pos ).sprite.drop();
 			//updates position
-			if (item instanceof Honeypot.ShatteredPot) ((Honeypot.ShatteredPot)item).setHolder( this );
+			if (item instanceof Honeypot.ShatteredPot) ((Honeypot.ShatteredPot)item).dropPot( this, pos );
 			item = null;
 		}
 		super.rollToDropLoot();
@@ -116,7 +116,8 @@ public class Thief extends Mob {
 	public int attackProc( Char enemy, int damage ) {
 		damage = super.attackProc( enemy, damage );
 		
-		if (item == null && enemy instanceof Hero && steal( (Hero)enemy )) {
+		if (alignment == Alignment.ENEMY && item == null
+				&& enemy instanceof Hero && steal( (Hero)enemy )) {
 			state = FLEEING;
 		}
 
@@ -139,7 +140,7 @@ public class Thief extends Mob {
 		if (item != null && !item.unique && item.level() < 1 ) {
 
 			GLog.w( Messages.get(Thief.class, "stole", item.name()) );
-			if (!item.stackable || hero.belongings.getSimilar(item) == null) {
+			if (!item.stackable) {
 				Dungeon.quickslot.convertToPlaceholder(item);
 			}
 			item.updateQuickslot();
@@ -150,7 +151,7 @@ public class Thief extends Mob {
 			} else {
 				this.item = item.detach( hero.belongings.backpack );
 				if ( item instanceof Honeypot.ShatteredPot)
-					((Honeypot.ShatteredPot)item).setHolder(this);
+					((Honeypot.ShatteredPot)item).pickupPot(this);
 			}
 
 			return true;
@@ -192,7 +193,9 @@ public class Thief extends Mob {
 				if (enemySeen) {
 					sprite.showStatus(CharSprite.NEGATIVE, Messages.get(Mob.class, "rage"));
 					state = HUNTING;
-				} else if (item != null && !Dungeon.level.heroFOV[pos]) {
+				} else if (item != null
+						&& !Dungeon.level.heroFOV[pos]
+						&& Dungeon.level.distance(Dungeon.hero.pos, pos) >= 6) {
 
 					int count = 32;
 					int newPos;

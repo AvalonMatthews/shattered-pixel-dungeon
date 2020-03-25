@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
 
@@ -110,7 +111,7 @@ public class TalismanOfForesight extends Artifact {
 			if (charge >= chargeCap) {
 				charge = chargeCap;
 				partialCharge = 0;
-				GLog.p( Messages.get(this, "full_charge") );
+				GLog.p( Messages.get(Foresight.class, "full_charge") );
 			}
 		}
 	}
@@ -130,9 +131,24 @@ public class TalismanOfForesight extends Artifact {
 
 		return desc;
 	}
-
+	
+	private static final String WARN = "warn";
+	
+	@Override
+	public void storeInBundle(Bundle bundle) {
+		super.storeInBundle(bundle);
+		bundle.put(WARN, warn);
+	}
+	
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		warn = bundle.getInt(WARN);
+	}
+	
+	private int warn = 0;
+	
 	public class Foresight extends ArtifactBuff{
-		private int warn = 0;
 
 		@Override
 		public boolean act() {
@@ -166,8 +182,11 @@ public class TalismanOfForesight extends Artifact {
 
 					if (Dungeon.level.heroFOV[p]
 							&& Dungeon.level.secret[p]
-							&& Dungeon.level.map[p] != Terrain.SECRET_DOOR)
+							&& Dungeon.level.map[p] != Terrain.SECRET_DOOR) {
+						if (Dungeon.level.traps.get(p) != null && Dungeon.level.traps.get(p).canBeSearched) {
 							smthFound = true;
+						}
+					}
 				}
 			}
 

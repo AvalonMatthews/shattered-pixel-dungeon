@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +83,7 @@ public abstract class SecretRoom extends SpecialRoom {
 		if (floorsLeft == 0) {
 			secrets = regionSecretsThisRun[region];
 		} else {
-			secrets = regionSecretsThisRun[region] / floorsLeft;
+			secrets = regionSecretsThisRun[region] / (float)floorsLeft;
 			if (Random.Float() < secrets % 1f){
 				secrets = (float)Math.ceil(secrets);
 			} else {
@@ -102,11 +103,8 @@ public abstract class SecretRoom extends SpecialRoom {
 			int newidx = Random.Int( runSecrets.size() );
 			if (newidx < index) index = newidx;
 		}
-		try {
-			r = runSecrets.get( index ).newInstance();
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-		}
+		
+		r = Reflection.newInstance(runSecrets.get( index ));
 		
 		runSecrets.add(runSecrets.remove(index));
 		

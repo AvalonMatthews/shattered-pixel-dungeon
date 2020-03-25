@@ -24,14 +24,11 @@ package com.shatteredpixel.shatteredpixeldungeon.items;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Combo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Boomerang;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -46,6 +43,7 @@ import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,6 +69,7 @@ public class Item implements Bundlable {
 	
 	public boolean stackable = false;
 	protected int quantity = 1;
+	public boolean dropsDownHeap = false;
 	
 	private int level = 0;
 
@@ -93,7 +92,7 @@ public class Item implements Bundlable {
 	};
 	
 	public ArrayList<String> actions( Hero hero ) {
-		ArrayList<String> actions = new ArrayList<String>();
+		ArrayList<String> actions = new ArrayList<>();
 		actions.add( AC_DROP );
 		actions.add( AC_THROW );
 		return actions;
@@ -131,9 +130,6 @@ public class Item implements Bundlable {
 		
 		curUser = hero;
 		curItem = this;
-
-		Combo combo = hero.buff(Combo.class);
-		if (combo != null) combo.detach();
 		
 		if (action.equals( AC_DROP )) {
 			
@@ -223,21 +219,20 @@ public class Item implements Bundlable {
 		if (amount <= 0 || amount >= quantity()) {
 			return null;
 		} else {
-			try {
-				
-				//pssh, who needs copy constructors?
-				Item split = getClass().newInstance();
-				Bundle copy = new Bundle();
-				this.storeInBundle(copy);
-				split.restoreFromBundle(copy);
-				split.quantity(amount);
-				quantity -= amount;
-				
-				return split;
-			} catch (Exception e){
-				ShatteredPixelDungeon.reportException(e);
+			//pssh, who needs copy constructors?
+			Item split = Reflection.newInstance(getClass());
+			
+			if (split == null){
 				return null;
 			}
+			
+			Bundle copy = new Bundle();
+			this.storeInBundle(copy);
+			split.restoreFromBundle(copy);
+			split.quantity(amount);
+			quantity -= amount;
+			
+			return split;
 		}
 	}
 	
@@ -250,7 +245,7 @@ public class Item implements Bundlable {
 		} else
 		if (quantity == 1) {
 
-			if (stackable || this instanceof Boomerang){
+			if (stackable){
 				Dungeon.quickslot.convertToPlaceholder(this);
 			}
 
@@ -336,7 +331,7 @@ public class Item implements Bundlable {
 	}
 	
 	public int visiblyUpgraded() {
-		return levelKnown ? level : 0;
+		return levelKnown ? level() : 0;
 	}
 	
 	public boolean visiblyCursed() {
@@ -365,6 +360,10 @@ public class Item implements Bundlable {
 		}
 		
 		return this;
+	}
+	
+	public void onHeroGainExp( float levelPercent, Hero hero ){
+		//do nothing by default
 	}
 	
 	public static void evoke( Hero hero ) {
@@ -426,17 +425,12 @@ public class Item implements Bundlable {
 	}
 	
 	public Item virtual(){
-		try {
-			
-			Item item = getClass().newInstance();
-			item.quantity = 0;
-			item.level = level;
-			return item;
-			
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-		}
+		Item item = Reflection.newInstance(getClass());
+		if (item == null) return null;
+		
+		item.quantity = 0;
+		item.level = level;
+		return item;
 	}
 	
 	public Item random() {

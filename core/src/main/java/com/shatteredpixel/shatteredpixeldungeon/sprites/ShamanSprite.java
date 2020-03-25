@@ -22,9 +22,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Lightning;
 import com.watabou.noosa.TextureFilm;
+import com.watabou.noosa.audio.Sample;
 
 public class ShamanSprite extends MobSprite {
 	
@@ -54,7 +57,14 @@ public class ShamanSprite extends MobSprite {
 	
 	public void zap( int pos ) {
 
-		parent.add( new Lightning( ch.pos, pos, (Shaman)ch ) );
+		Char enemy = Actor.findChar(pos);
+
+		if (enemy != null) {
+			parent.add(new Lightning(center(), enemy.sprite.destinationCenter(), (Shaman) ch));
+		} else {
+			parent.add(new Lightning(center(), pos, (Shaman) ch));
+		}
+		Sample.INSTANCE.play( Assets.SND_LIGHTNING );
 		
 		turnTo( ch.pos, pos );
 		play( zap );

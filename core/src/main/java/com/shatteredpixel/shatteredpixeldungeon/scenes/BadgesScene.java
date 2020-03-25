@@ -29,16 +29,15 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.BadgeBanner;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Archs;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBadge;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
-import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 import java.util.List;
@@ -62,12 +61,14 @@ public class BadgesScene extends PixelScene {
 		add( archs );
 
 		float left = 5;
-		float top = 16;
+		float top = 20;
 
-		RenderedText title = PixelScene.renderText( Messages.get(this, "title"), 9 );
+		RenderedTextBlock title = PixelScene.renderTextBlock( Messages.get(this, "title"), 9 );
 		title.hardlight(Window.TITLE_COLOR);
-		title.x = (w - title.width()) / 2f;
-		title.y = (top - title.baseLine()) / 2f;
+		title.setPos(
+				(w - title.width()) / 2f,
+				(top - title.height()) / 2f
+		);
 		align(title);
 		add(title);
 
@@ -107,22 +108,12 @@ public class BadgesScene extends PixelScene {
 		add( btnExit );
 
 		fadeIn();
-
-		Badges.loadingListener = new Callback() {
-			@Override
-			public void call() {
-				if (Game.scene() == BadgesScene.this) {
-					ShatteredPixelDungeon.switchNoFade( BadgesScene.class );
-				}
-			}
-		};
 	}
 
 	@Override
 	public void destroy() {
 
 		Badges.saveGlobal();
-		Badges.loadingListener = null;
 
 		super.destroy();
 	}

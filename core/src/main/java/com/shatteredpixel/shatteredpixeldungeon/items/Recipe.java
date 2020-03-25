@@ -27,27 +27,25 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MeatPie;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.StewedMeat;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.AlchemicalCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.BlizzardBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.CausticBrew;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.FrigidBrew;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.FrostfireBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.InfernalBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.ShockingBrew;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.WickedBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfAquaticRejuvenation;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfArcaneArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfDragonsBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfHoneyedHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfIcyTouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMight;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfRestoration;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfToxicEssence;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfVitality;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.AquaBlast;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.ArcaneCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.CurseInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.FeatherFall;
@@ -56,9 +54,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalPorter;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 
@@ -88,15 +87,10 @@ public abstract class Recipe {
 		//gets a simple list of items based on inputs
 		public ArrayList<Item> getIngredients() {
 			ArrayList<Item> result = new ArrayList<>();
-			try {
-				for (int i = 0; i < inputs.length; i++) {
-					Item ingredient = inputs[i].newInstance();
-					ingredient.quantity(inQuantity[i]);
-					result.add(ingredient);
-				}
-			} catch (Exception e){
-				ShatteredPixelDungeon.reportException( e );
-				return null;
+			for (int i = 0; i < inputs.length; i++) {
+				Item ingredient = Reflection.newInstance(inputs[i]);
+				ingredient.quantity(inQuantity[i]);
+				result.add(ingredient);
 			}
 			return result;
 		}
@@ -107,6 +101,7 @@ public abstract class Recipe {
 			int[] needed = inQuantity.clone();
 			
 			for (Item ingredient : ingredients){
+				if (!ingredient.isIdentified()) return false;
 				for (int i = 0; i < inputs.length; i++){
 					if (ingredient.getClass() == inputs[i]){
 						needed[i] -= ingredient.quantity();
@@ -155,7 +150,7 @@ public abstract class Recipe {
 		//ingredients are ignored, as output doesn't vary
 		public final Item sampleOutput(ArrayList<Item> ingredients){
 			try {
-				Item result = output.newInstance();
+				Item result = Reflection.newInstance(output);
 				result.quantity(outQuantity);
 				return result;
 			} catch (Exception e) {
@@ -178,23 +173,20 @@ public abstract class Recipe {
 	
 	private static Recipe[] twoIngredientRecipes = new Recipe[]{
 		new Blandfruit.CookFruit(),
-		new TippedDart.TipDart(),
 		new Bomb.EnhanceBomb(),
+		new AlchemicalCatalyst.Recipe(),
+		new ArcaneCatalyst.Recipe(),
+		new ElixirOfArcaneArmor.Recipe(),
 		new ElixirOfAquaticRejuvenation.Recipe(),
 		new ElixirOfDragonsBlood.Recipe(),
 		new ElixirOfIcyTouch.Recipe(),
 		new ElixirOfMight.Recipe(),
 		new ElixirOfHoneyedHealing.Recipe(),
-		new ElixirOfRestoration.Recipe(),
 		new ElixirOfToxicEssence.Recipe(),
-		new ElixirOfVitality.Recipe(),
 		new BlizzardBrew.Recipe(),
-		new CausticBrew.Recipe(),
-		new FrigidBrew.Recipe(),
-		new FrostfireBrew.Recipe(),
 		new InfernalBrew.Recipe(),
 		new ShockingBrew.Recipe(),
-		new WickedBrew.Recipe(),
+		new CausticBrew.Recipe(),
 		new Alchemize.Recipe(),
 		new AquaBlast.Recipe(),
 		new BeaconOfReturning.Recipe(),
@@ -205,6 +197,7 @@ public abstract class Recipe {
 		new PhaseShift.Recipe(),
 		new ReclaimTrap.Recipe(),
 		new Recycle.Recipe(),
+		new WildEnergy.Recipe(),
 		new StewedMeat.twoMeat()
 	};
 	
@@ -244,8 +237,7 @@ public abstract class Recipe {
 	}
 	
 	public static boolean usableInRecipe(Item item){
-		return item.isIdentified()
-				&& !item.cursed
+		return !item.cursed
 				&& (!(item instanceof EquipableItem) || item instanceof Dart || item instanceof AlchemistsToolkit)
 				&& !(item instanceof Wand);
 	}

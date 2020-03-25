@@ -22,7 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.LeatherArmor;
@@ -93,7 +92,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfClairvoyance;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDeepenedSleep;
-import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDetectCurse;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDisarming;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfFlock;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
@@ -106,10 +105,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfDisintegration
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfPrismaticLight;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfTransfusion;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.AssassinsBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.BattleAxe;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
@@ -138,17 +139,21 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Sword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WarHammer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Whip;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.HeavyBoomerang;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ForceCube;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Javelin;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Kunai;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Shuriken;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingClub;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingHammer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingKnife;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingSpear;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Tomahawk;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Blindweed;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Dreamfoil;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Earthroot;
@@ -165,6 +170,7 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -287,13 +293,12 @@ public class Generator {
 					StoneOfBlink.class,
 					StoneOfClairvoyance.class,
 					StoneOfDeepenedSleep.class,
-					StoneOfDetectCurse.class,
+					StoneOfDisarming.class,
 					StoneOfFlock.class,
 					StoneOfShock.class
 			};
 			STONE.probs = new float[]{ 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-			
-			//TODO: add last ones when implemented
+
 			WAND.classes = new Class<?>[]{
 					WandOfMagicMissile.class,
 					WandOfLightning.class,
@@ -301,14 +306,14 @@ public class Generator {
 					WandOfFireblast.class,
 					WandOfCorrosion.class,
 					WandOfBlastWave.class,
-					//WandOfLivingEarth.class,
+					WandOfLivingEarth.class,
 					WandOfFrost.class,
 					WandOfPrismaticLight.class,
-					//WandOfWarding.class,
+					WandOfWarding.class,
 					WandOfTransfusion.class,
 					WandOfCorruption.class,
 					WandOfRegrowth.class };
-			WAND.probs = new float[]{ 5, 4, 4, 4, 4, 3, /*3,*/ 3, 3, /*3,*/ 3, 3, 3 };
+			WAND.probs = new float[]{ 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3 };
 			
 			//see generator.randomWeapon
 			WEAPON.classes = new Class<?>[]{};
@@ -375,34 +380,38 @@ public class Generator {
 			MISSILE.probs = new float[]{};
 			
 			MIS_T1.classes = new Class<?>[]{
-					Dart.class,
+					ThrowingStone.class,
 					ThrowingKnife.class
 			};
-			MIS_T1.probs = new float[]{ 1, 1 };
+			MIS_T1.probs = new float[]{ 6, 5 };
 			
 			MIS_T2.classes = new Class<?>[]{
 					FishingSpear.class,
+					ThrowingClub.class,
 					Shuriken.class
 			};
-			MIS_T2.probs = new float[]{ 4, 3 };
+			MIS_T2.probs = new float[]{ 6, 5, 4 };
 			
 			MIS_T3.classes = new Class<?>[]{
 					ThrowingSpear.class,
+					Kunai.class,
 					Bolas.class
 			};
-			MIS_T3.probs = new float[]{ 4, 3 };
+			MIS_T3.probs = new float[]{ 6, 5, 4 };
 			
 			MIS_T4.classes = new Class<?>[]{
 					Javelin.class,
-					Tomahawk.class
+					Tomahawk.class,
+					HeavyBoomerang.class
 			};
-			MIS_T4.probs = new float[]{ 4, 3 };
+			MIS_T4.probs = new float[]{ 6, 5, 4 };
 			
 			MIS_T5.classes = new Class<?>[]{
 					Trident.class,
-					ThrowingHammer.class
+					ThrowingHammer.class,
+					ForceCube.class
 			};
-			MIS_T5.probs = new float[]{ 4, 3 };
+			MIS_T5.probs = new float[]{ 6, 5, 4 };
 			
 			FOOD.classes = new Class<?>[]{
 					Food.class,
@@ -470,42 +479,24 @@ public class Generator {
 	}
 	
 	public static Item random( Category cat ) {
-		try {
-			
-			switch (cat) {
-			case ARMOR:
-				return randomArmor();
-			case WEAPON:
-				return randomWeapon();
-			case MISSILE:
-				return randomMissile();
-			case ARTIFACT:
-				Item item = randomArtifact();
-				//if we're out of artifacts, return a ring instead.
-				return item != null ? item : random(Category.RING);
-			default:
-				return ((Item)cat.classes[Random.chances( cat.probs )].newInstance()).random();
-			}
-			
-		} catch (Exception e) {
-
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-			
+		switch (cat) {
+		case ARMOR:
+			return randomArmor();
+		case WEAPON:
+			return randomWeapon();
+		case MISSILE:
+			return randomMissile();
+		case ARTIFACT:
+			Item item = randomArtifact();
+			//if we're out of artifacts, return a ring instead.
+			return item != null ? item : random(Category.RING);
+		default:
+			return ((Item) Reflection.newInstance(cat.classes[Random.chances( cat.probs )])).random();
 		}
 	}
 	
 	public static Item random( Class<? extends Item> cl ) {
-		try {
-			
-			return ((Item)cl.newInstance()).random();
-			
-		} catch (Exception e) {
-
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-			
-		}
+		return Reflection.newInstance(cl).random();
 	}
 
 	public static Armor randomArmor(){
@@ -515,15 +506,10 @@ public class Generator {
 	public static Armor randomArmor(int floorSet) {
 
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
-
-		try {
-			Armor a = (Armor)Category.ARMOR.classes[Random.chances(floorSetTierProbs[floorSet])].newInstance();
-			a.random();
-			return a;
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-		}
+		
+		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(floorSetTierProbs[floorSet])]);
+		a.random();
+		return a;
 	}
 
 	public static final Category[] wepTiers = new Category[]{
@@ -541,16 +527,11 @@ public class Generator {
 	public static MeleeWeapon randomWeapon(int floorSet) {
 
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
-
-		try {
-			Category c = wepTiers[Random.chances(floorSetTierProbs[floorSet])];
-			MeleeWeapon w = (MeleeWeapon)c.classes[Random.chances(c.probs)].newInstance();
-			w.random();
-			return w;
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-		}
+		
+		Category c = wepTiers[Random.chances(floorSetTierProbs[floorSet])];
+		MeleeWeapon w = (MeleeWeapon)Reflection.newInstance(c.classes[Random.chances(c.probs)]);
+		w.random();
+		return w;
 	}
 	
 	public static final Category[] misTiers = new Category[]{
@@ -569,43 +550,30 @@ public class Generator {
 		
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
 		
-		try {
-			Category c = misTiers[Random.chances(floorSetTierProbs[floorSet])];
-			MissileWeapon w = (MissileWeapon)c.classes[Random.chances(c.probs)].newInstance();
-			w.random();
-			return w;
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
-			return null;
-		}
+		Category c = misTiers[Random.chances(floorSetTierProbs[floorSet])];
+		MissileWeapon w = (MissileWeapon)Reflection.newInstance(c.classes[Random.chances(c.probs)]);
+		w.random();
+		return w;
 	}
 
 	//enforces uniqueness of artifacts throughout a run.
 	public static Artifact randomArtifact() {
 
-		try {
-			Category cat = Category.ARTIFACT;
-			int i = Random.chances( cat.probs );
+		Category cat = Category.ARTIFACT;
+		int i = Random.chances( cat.probs );
 
-			//if no artifacts are left, return null
-			if (i == -1){
-				return null;
-			}
-			
-			Class<?extends Artifact> art = (Class<? extends Artifact>) cat.classes[i];
+		//if no artifacts are left, return null
+		if (i == -1){
+			return null;
+		}
+		
+		Class<?extends Artifact> art = (Class<? extends Artifact>) cat.classes[i];
 
-			if (removeArtifact(art)) {
-				Artifact artifact = art.newInstance();
-				
-				artifact.random();
-				
-				return artifact;
-			} else {
-				return null;
-			}
-
-		} catch (Exception e) {
-			ShatteredPixelDungeon.reportException(e);
+		if (removeArtifact(art)) {
+			Artifact artifact = Reflection.newInstance(art);
+			artifact.random();
+			return artifact;
+		} else {
 			return null;
 		}
 	}
@@ -661,19 +629,10 @@ public class Generator {
 		}
 		
 		initArtifacts();
-		if (bundle.contains(SPAWNED_ARTIFACTS)){
-			for ( Class<?extends Artifact> artifact : bundle.getClassArray(SPAWNED_ARTIFACTS) ){
-				removeArtifact(artifact);
-			}
-		//pre-0.6.1 saves
-		} else if (bundle.contains("artifacts")) {
-			String[] names = bundle.getStringArray("artifacts");
-			Category cat = Category.ARTIFACT;
-
-			for (String artifact : names)
-				for (int i = 0; i < cat.classes.length; i++)
-					if (cat.classes[i].getSimpleName().equals(artifact))
-						cat.probs[i] = 0;
+		
+		for ( Class<?extends Artifact> artifact : bundle.getClassArray(SPAWNED_ARTIFACTS) ){
+			removeArtifact(artifact);
 		}
+		
 	}
 }

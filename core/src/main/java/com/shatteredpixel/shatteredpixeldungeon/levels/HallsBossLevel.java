@@ -26,7 +26,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Bones;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Yog;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
@@ -143,11 +142,6 @@ public class HallsBossLevel extends Level {
 	}
 	
 	@Override
-	public Mob createMob() {
-		return null;
-	}
-	
-	@Override
 	protected void createMobs() {
 	}
 	
@@ -170,19 +164,19 @@ public class HallsBossLevel extends Level {
 	@Override
 	public int randomRespawnCell() {
 		int pos = entrance == -1 ? stairs : entrance;
-		int cell = pos + PathFinder.NEIGHBOURS8[Random.Int(8)];
-		while (!passable[cell]){
+		int cell;
+		do {
 			cell = pos + PathFinder.NEIGHBOURS8[Random.Int(8)];
-		}
+		} while (!passable[cell] || Actor.findChar(cell) != null);
 		return cell;
 	}
 	
 	@Override
-	public void press( int cell, Char hero ) {
+	public void occupyCell( Char ch ) {
 		
-		super.press( cell, hero );
+		super.occupyCell( ch );
 		
-		if (!enteredArena && hero == Dungeon.hero && cell != entrance) {
+		if (!enteredArena && ch == Dungeon.hero && ch.pos != entrance) {
 			
 			enteredArena = true;
 			seal();

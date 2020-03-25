@@ -22,7 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
@@ -32,13 +32,13 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotio
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfDivination;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
+import com.watabou.utils.Reflection;
 
 public class Recycle extends InventorySpell {
 	
@@ -54,22 +54,12 @@ public class Recycle extends InventorySpell {
 			if (item instanceof Potion) {
 				result = Generator.random(Generator.Category.POTION);
 				if (item instanceof ExoticPotion){
-					try {
-						result = ExoticPotion.regToExo.get(result.getClass()).newInstance();
-					} catch ( Exception e ){
-						ShatteredPixelDungeon.reportException(e);
-						result = item;
-					}
+					result = Reflection.newInstance(ExoticPotion.regToExo.get(result.getClass()));
 				}
 			} else if (item instanceof Scroll) {
 				result = Generator.random(Generator.Category.SCROLL);
 				if (item instanceof ExoticScroll){
-					try {
-						result = ExoticScroll.regToExo.get(result.getClass()).newInstance();
-					} catch ( Exception e ){
-						ShatteredPixelDungeon.reportException(e);
-						result = item;
-					}
+					result = Reflection.newInstance(ExoticScroll.regToExo.get(result.getClass()));
 				}
 			} else if (item instanceof Plant.Seed) {
 				result = Generator.random(Generator.Category.SEED);
@@ -80,7 +70,9 @@ public class Recycle extends InventorySpell {
 		
 		item.detach(curUser.belongings.backpack);
 		GLog.p(Messages.get(this, "recycled", result.name()));
-		result.collect();
+		if (!result.collect()){
+			Dungeon.level.drop(result, curUser.pos).sprite.drop();
+		}
 		//TODO visuals
 	}
 	
@@ -94,13 +86,13 @@ public class Recycle extends InventorySpell {
 	@Override
 	public int price() {
 		//prices of ingredients, divided by output quantity
-		return Math.round(quantity * ((50 + 50) / 8f));
+		return Math.round(quantity * ((50 + 40) / 8f));
 	}
 	
 	public static class Recipe extends com.shatteredpixel.shatteredpixeldungeon.items.Recipe.SimpleRecipe {
 		
 		{
-			inputs =  new Class[]{ScrollOfTransmutation.class, ScrollOfDivination.class};
+			inputs =  new Class[]{ScrollOfTransmutation.class, ArcaneCatalyst.class};
 			inQuantity = new int[]{1, 1};
 			
 			cost = 6;

@@ -28,7 +28,7 @@ public class Banner extends Image {
 
 	private enum State {
 		FADE_IN, STATIC, FADE_OUT
-	};
+	}
 	private State state;
 	
 	private float time;
@@ -78,8 +78,10 @@ public class Banner extends Image {
 				alpha( 1 - p );
 				break;
 			case STATIC:
+				resetColor();
 				break;
 			case FADE_OUT:
+				resetColor();
 				alpha( p );
 				break;
 			}

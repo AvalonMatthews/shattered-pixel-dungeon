@@ -23,7 +23,6 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -32,38 +31,37 @@ import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfFuror;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Annoying;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Displacing;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Elastic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Exhausting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Fragile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Friendly;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Polarized;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Sacrificial;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Wayward;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blocking;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blooming;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Chilling;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Dazzling;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Eldritch;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Kinetic;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Corrupting;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Elastic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Lucky;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Stunning;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Unstable;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Vampiric;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Venomous;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Vorpal;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 abstract public class Weapon extends KindOfWeapon {
-
-	private static final int HITS_TO_KNOW    = 20;
 
 	public float    ACC = 1f;	// Accuracy modifier
 	public float	DLY	= 1f;	// Speed modifier
@@ -92,10 +90,13 @@ abstract public class Weapon extends KindOfWeapon {
 	}
 	
 	public Augment augment = Augment.NONE;
-
-	private int hitsToKnow = HITS_TO_KNOW;
+	
+	private static final int USES_TO_ID = 20;
+	private int usesLeftToID = USES_TO_ID;
+	private float availableUsesToID = USES_TO_ID/2f;
 	
 	public Enchantment enchantment;
+	public boolean curseInfusionBonus = false;
 	
 	@Override
 	public int proc( Char attacker, Char defender, int damage ) {
@@ -104,44 +105,64 @@ abstract public class Weapon extends KindOfWeapon {
 			damage = enchantment.proc( this, attacker, defender, damage );
 		}
 		
-		if (!levelKnown && attacker == Dungeon.hero) {
-			if (--hitsToKnow <= 0) {
+		if (!levelKnown && attacker == Dungeon.hero && availableUsesToID >= 1) {
+			availableUsesToID--;
+			usesLeftToID--;
+			if (usesLeftToID <= 0) {
 				identify();
-				GLog.i( Messages.get(Weapon.class, "identify") );
+				GLog.p( Messages.get(Weapon.class, "identify") );
 				Badges.validateItemLevelAquired( this );
 			}
 		}
 
 		return damage;
 	}
-
-	private static final String UNFAMILIRIARITY	= "unfamiliarity";
-	private static final String ENCHANTMENT		= "enchantment";
-	private static final String AUGMENT			= "augment";
+	
+	public void onHeroGainExp( float levelPercent, Hero hero ){
+		if (!levelKnown && isEquipped(hero) && availableUsesToID <= USES_TO_ID/2f) {
+			//gains enough uses to ID over 0.5 levels
+			availableUsesToID = Math.min(USES_TO_ID/2f, availableUsesToID + levelPercent * USES_TO_ID);
+		}
+	}
+	
+	private static final String USES_LEFT_TO_ID = "uses_left_to_id";
+	private static final String AVAILABLE_USES  = "available_uses";
+	private static final String ENCHANTMENT	    = "enchantment";
+	private static final String CURSE_INFUSION_BONUS = "curse_infusion_bonus";
+	private static final String AUGMENT	        = "augment";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
 		super.storeInBundle( bundle );
-		bundle.put( UNFAMILIRIARITY, hitsToKnow );
+		bundle.put( USES_LEFT_TO_ID, usesLeftToID );
+		bundle.put( AVAILABLE_USES, availableUsesToID );
 		bundle.put( ENCHANTMENT, enchantment );
+		bundle.put( CURSE_INFUSION_BONUS, curseInfusionBonus );
 		bundle.put( AUGMENT, augment );
 	}
 	
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
-		hitsToKnow = bundle.getInt( UNFAMILIRIARITY );
+		usesLeftToID = bundle.getInt( USES_LEFT_TO_ID );
+		availableUsesToID = bundle.getInt( AVAILABLE_USES );
 		enchantment = (Enchantment)bundle.get( ENCHANTMENT );
+		curseInfusionBonus = bundle.getBoolean( CURSE_INFUSION_BONUS );
 		
-		//pre-0.6.5 saves
-		if (bundle.contains( "imbue" )){
-			String imbue = bundle.getString( "imbue" );
-			if (imbue.equals( "LIGHT" ))        augment = Augment.SPEED;
-			else if (imbue.equals( "HEAVY" ))   augment = Augment.DAMAGE;
-			else                                augment = Augment.NONE;
-		} else {
-			augment = bundle.getEnum(AUGMENT, Augment.class);
+		//pre-0.7.2 saves
+		if (bundle.contains( "unfamiliarity" )){
+			usesLeftToID = bundle.getInt( "unfamiliarity" );
+			availableUsesToID = USES_TO_ID/2f;
 		}
+		
+		augment = bundle.getEnum(AUGMENT, Augment.class);
+	}
+	
+	@Override
+	public void reset() {
+		super.reset();
+		usesLeftToID = USES_TO_ID;
+		availableUsesToID = USES_TO_ID/2f;
 	}
 	
 	@Override
@@ -188,16 +209,27 @@ abstract public class Weapon extends KindOfWeapon {
 	public abstract int STRReq(int lvl);
 	
 	@Override
+	public int level() {
+		return super.level() + (curseInfusionBonus ? 1 : 0);
+	}
+	
+	@Override
 	public Item upgrade() {
 		return upgrade(false);
 	}
 	
 	public Item upgrade(boolean enchant ) {
 
-		if (enchant && (enchantment == null || enchantment.curse())){
-			enchant( Enchantment.random() );
-		} else if (!enchant && Random.Float() > Math.pow(0.9, level())){
-			enchant(null);
+		if (enchant){
+			if (enchantment == null || hasCurseEnchant()){
+				enchant(Enchantment.random());
+			}
+		} else {
+			if (hasCurseEnchant()){
+				if (Random.Int(3) == 0) enchant(null);
+			} else if (level() >= 4 && Random.Float(10) < Math.pow(2, level()-4)){
+				enchant(null);
+			}
 		}
 		
 		cursed = false;
@@ -238,6 +270,7 @@ abstract public class Weapon extends KindOfWeapon {
 	}
 	
 	public Weapon enchant( Enchantment ench ) {
+		if (ench == null || !ench.curse()) curseInfusionBonus = false;
 		enchantment = ench;
 		updateQuickslot();
 		return this;
@@ -272,14 +305,14 @@ abstract public class Weapon extends KindOfWeapon {
 	public static abstract class Enchantment implements Bundlable {
 		
 		private static final Class<?>[] common = new Class<?>[]{
-				Blazing.class, Venomous.class, Vorpal.class, Shocking.class};
+				Blazing.class, Chilling.class, Kinetic.class, Shocking.class};
 		
 		private static final Class<?>[] uncommon = new Class<?>[]{
-				Chilling.class, Eldritch.class, Lucky.class,
-				Projecting.class, Unstable.class, Dazzling.class};
+				Blocking.class, Blooming.class, Elastic.class,
+				Lucky.class, Projecting.class, Unstable.class};
 		
 		private static final Class<?>[] rare = new Class<?>[]{
-				Grim.class, Stunning.class, Vampiric.class};
+				Corrupting.class, Grim.class, Vampiric.class};
 		
 		private static final float[] typeChances = new float[]{
 				50, //12.5% each
@@ -289,7 +322,7 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		private static final Class<?>[] curses = new Class<?>[]{
 				Annoying.class, Displacing.class, Exhausting.class, Fragile.class,
-				Sacrificial.class, Wayward.class, Elastic.class, Friendly.class
+				Sacrificial.class, Wayward.class, Polarized.class, Friendly.class
 		};
 		
 			
@@ -338,65 +371,45 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomCommon( Class<? extends Enchantment> ... toIgnore ) {
-			try {
-				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(common));
-				enchants.removeAll(Arrays.asList(toIgnore));
-				if (enchants.isEmpty()) {
-					return random();
-				} else {
-					return (Enchantment) Random.element(enchants).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(common));
+			enchants.removeAll(Arrays.asList(toIgnore));
+			if (enchants.isEmpty()) {
+				return random();
+			} else {
+				return (Enchantment) Reflection.newInstance(Random.element(enchants));
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomUncommon( Class<? extends Enchantment> ... toIgnore ) {
-			try {
-				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(uncommon));
-				enchants.removeAll(Arrays.asList(toIgnore));
-				if (enchants.isEmpty()) {
-					return random();
-				} else {
-					return (Enchantment) Random.element(enchants).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(uncommon));
+			enchants.removeAll(Arrays.asList(toIgnore));
+			if (enchants.isEmpty()) {
+				return random();
+			} else {
+				return (Enchantment) Reflection.newInstance(Random.element(enchants));
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomRare( Class<? extends Enchantment> ... toIgnore ) {
-			try {
-				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(rare));
-				enchants.removeAll(Arrays.asList(toIgnore));
-				if (enchants.isEmpty()) {
-					return random();
-				} else {
-					return (Enchantment) Random.element(enchants).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(rare));
+			enchants.removeAll(Arrays.asList(toIgnore));
+			if (enchants.isEmpty()) {
+				return random();
+			} else {
+				return (Enchantment) Reflection.newInstance(Random.element(enchants));
 			}
 		}
 
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomCurse( Class<? extends Enchantment> ... toIgnore ){
-			try {
-				ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(curses));
-				enchants.removeAll(Arrays.asList(toIgnore));
-				if (enchants.isEmpty()) {
-					return random();
-				} else {
-					return (Enchantment) Random.element(enchants).newInstance();
-				}
-			} catch (Exception e) {
-				ShatteredPixelDungeon.reportException(e);
-				return null;
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(curses));
+			enchants.removeAll(Arrays.asList(toIgnore));
+			if (enchants.isEmpty()) {
+				return random();
+			} else {
+				return (Enchantment) Reflection.newInstance(Random.element(enchants));
 			}
 		}
 		

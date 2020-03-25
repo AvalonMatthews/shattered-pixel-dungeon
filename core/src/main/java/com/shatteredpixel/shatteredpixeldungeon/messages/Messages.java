@@ -21,14 +21,16 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.messages;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
-import com.watabou.utils.DeviceCompat;
 
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IllegalFormatException;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -89,14 +91,16 @@ public class Messages {
 				String key = keys.nextElement();
 				String value = bundle.getString(key);
 				
-				if (DeviceCompat.usesISO_8859_1()) {
+				//TODO do all desktop platforms read as ISO, or only windows?
+				// should also move this to platform support, probably.
+				if (Gdx.app.getType() == Application.ApplicationType.Desktop) {
 					try {
 						value = new String(value.getBytes("ISO-8859-1"), "UTF-8");
 					} catch (Exception e) {
 						ShatteredPixelDungeon.reportException(e);
 					}
 				}
-
+				
 				strings.put(key, value);
 			}
 		}
@@ -146,7 +150,12 @@ public class Messages {
 	 */
 
 	public static String format( String format, Object...args ) {
-		return String.format( Locale.ENGLISH, format, args );
+		try {
+			return String.format(Locale.ENGLISH, format, args);
+		} catch (IllegalFormatException e) {
+			ShatteredPixelDungeon.reportException( e );
+			return format;
+		}
 	}
 
 	public static String capitalize( String str ){

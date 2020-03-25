@@ -37,7 +37,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
@@ -54,7 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.HallsLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastShopLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
-import com.shatteredpixel.shatteredpixeldungeon.levels.PrisonBossLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.NewPrisonBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.PrisonLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
@@ -91,7 +90,7 @@ public class Dungeon {
 		//Health potion sources
 		//enemies
 		SWARM_HP,
-		GUARD_HP,
+		NECRO_HP,
 		BAT_HP,
 		WARLOCK_HP,
 		SCORPIO_HP,
@@ -140,33 +139,6 @@ public class Dungeon {
 				}
 				
 			}
-			//saves prior to 0.6.4
-			if (bundle.contains("SEED_POUCH")) {
-				LimitedDrops.VELVET_POUCH.count = bundle.getInt("SEED_POUCH");
-			}
-			if (bundle.contains("WAND_HOLSTER")) {
-				LimitedDrops.MAGICAL_HOLSTER.count = bundle.getInt("WAND_HOLSTER");
-			}
-		}
-
-		//for saves prior to 0.6.1
-		public static void legacyRestore( int[] counts ){
-			STRENGTH_POTIONS.count =    counts[0];
-			UPGRADE_SCROLLS.count =     counts[1];
-			ARCANE_STYLI.count =        counts[2];
-			SWARM_HP.count =            counts[3];
-			BAT_HP.count =              counts[4];
-			WARLOCK_HP.count =          counts[5];
-			SCORPIO_HP.count =          counts[6];
-			COOKING_HP.count =          counts[7];
-			BLANDFRUIT_SEED.count =     counts[8];
-			THIEVES_ARMBAND.count =     counts[9];
-			DEW_VIAL.count =            counts[10];
-			VELVET_POUCH.count =        counts[11];
-			SCROLL_HOLDER.count =       counts[12];
-			POTION_BANDOLIER.count =    counts[13];
-			MAGICAL_HOLSTER.count =     counts[14];
-			GUARD_HP.count =            counts[15];
 		}
 
 	}
@@ -226,7 +198,7 @@ public class Dungeon {
 		for (LimitedDrops a : LimitedDrops.values())
 			a.count = 0;
 		
-		chapters = new HashSet<Integer>();
+		chapters = new HashSet<>();
 		
 		Ghost.Quest.reset();
 		Wandmaker.Quest.reset();
@@ -281,7 +253,7 @@ public class Dungeon {
 			level = new PrisonLevel();
 			break;
 		case 10:
-			level = new PrisonBossLevel();
+			level = new NewPrisonBossLevel();
 			break;
 		case 11:
 		case 12:
@@ -360,7 +332,6 @@ public class Dungeon {
 		return depth == 5 || depth == 10 || depth == 15 || depth == 20 || depth == 25;
 	}
 	
-	@SuppressWarnings("deprecation")
 	public static void switchLevel( final Level level, int pos ) {
 		
 		if (pos == -2){
@@ -372,7 +343,7 @@ public class Dungeon {
 		PathFinder.setMapSize(level.width(), level.height());
 		
 		Dungeon.level = level;
-		DriedRose.restoreGhostHero( level, pos );
+		Mob.restoreAllies( level, pos );
 		Actor.init();
 		
 		Actor respawner = level.respawner();
@@ -440,9 +411,9 @@ public class Dungeon {
 
 	public static void dropToChasm( Item item ) {
 		int depth = Dungeon.depth + 1;
-		ArrayList<Item> dropped = (ArrayList<Item>)Dungeon.droppedItems.get( depth );
+		ArrayList<Item> dropped = Dungeon.droppedItems.get( depth );
 		if (dropped == null) {
-			Dungeon.droppedItems.put( depth, dropped = new ArrayList<Item>() );
+			Dungeon.droppedItems.put( depth, dropped = new ArrayList<>() );
 		}
 		dropped.add( item );
 	}
@@ -502,7 +473,7 @@ public class Dungeon {
 	private static final String QUESTS		= "quests";
 	private static final String BADGES		= "badges";
 	
-	public static void saveGame( int save ) throws IOException {
+	public static void saveGame( int save ) {
 		try {
 			Bundle bundle = new Bundle();
 
@@ -615,15 +586,10 @@ public class Dungeon {
 		quickslot.restorePlaceholders( bundle );
 		
 		if (fullLoad) {
+			
+			LimitedDrops.restore( bundle.getBundle(LIMDROPS) );
 
-			//pre-0.6.1
-			if( bundle.contains("limiteddrops") ){
-				LimitedDrops.legacyRestore( bundle.getIntArray("limiteddrops") );
-			} else {
-				LimitedDrops.restore( bundle.getBundle(LIMDROPS) );
-			}
-
-			chapters = new HashSet<Integer>();
+			chapters = new HashSet<>();
 			int ids[] = bundle.getIntArray( CHAPTERS );
 			if (ids != null) {
 				for (int id : ids) {
@@ -805,7 +771,7 @@ public class Dungeon {
 		}
 		
 		if (hero.buff(Awareness.class) != null){
-			for (Heap h : level.heaps.values()){
+			for (Heap h : level.heaps.valueList()){
 				BArray.or( level.visited, level.heroFOV, h.pos - 1 - level.width(), 3, level.visited );
 				BArray.or( level.visited, level.heroFOV, h.pos - 1, 3, level.visited );
 				BArray.or( level.visited, level.heroFOV, h.pos - 1 + level.width(), 3, level.visited );

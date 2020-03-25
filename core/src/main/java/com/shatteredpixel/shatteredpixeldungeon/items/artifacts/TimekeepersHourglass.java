@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -107,7 +108,7 @@ public class TimekeepersHourglass extends Artifact {
 									activeBuff.attachTo(Dungeon.hero);
 									((timeFreeze)activeBuff).processTime(0f);
 								}
-							};
+							}
 						}
 				);
 		}
@@ -197,7 +198,7 @@ public class TimekeepersHourglass extends Artifact {
 		if (bundle.contains( BUFF )){
 			Bundle buffBundle = bundle.getBundle( BUFF );
 
-			if (buffBundle.contains( timeFreeze.PARTIALTIME ))
+			if (buffBundle.contains( timeFreeze.PRESSES ))
 				activeBuff = new timeFreeze();
 			else
 				activeBuff = new timeStasis();
@@ -250,7 +251,7 @@ public class TimekeepersHourglass extends Artifact {
 				((Hero) target).spendAndNext(5*usedCharge);
 
 				//shouldn't punish the player for going into stasis frequently
-				Hunger hunger = target.buff(Hunger.class);
+				Hunger hunger = Buff.affect(target, Hunger.class);
 				if (hunger != null && !hunger.isStarving())
 					hunger.satisfy(5*usedCharge);
 
@@ -290,15 +291,15 @@ public class TimekeepersHourglass extends Artifact {
 			type = buffType.POSITIVE;
 		}
 
-		float partialTime = 1f;
+		float turnsToCost = 0f;
 
-		ArrayList<Integer> presses = new ArrayList<Integer>();
+		ArrayList<Integer> presses = new ArrayList<>();
 
 		public void processTime(float time){
-			partialTime += time;
+			turnsToCost -= time;
 
-			while (partialTime >= 2f){
-				partialTime -= 2f;
+			while (turnsToCost < 0f){
+				turnsToCost += 2f;
 				charge --;
 			}
 
@@ -318,7 +319,7 @@ public class TimekeepersHourglass extends Artifact {
 
 		private void triggerPresses(){
 			for (int cell : presses)
-				Dungeon.level.press(cell, null, true);
+				Dungeon.level.pressCell(cell);
 
 			presses = new ArrayList<>();
 		}
@@ -335,7 +336,7 @@ public class TimekeepersHourglass extends Artifact {
 		@Override
 		public void detach(){
 			for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0]))
-				mob.sprite.remove(CharSprite.State.PARALYSED);
+				if (mob.paralysed <= 0) mob.sprite.remove(CharSprite.State.PARALYSED);
 			GameScene.freezeEmitters = false;
 
 			updateQuickslot();
@@ -346,7 +347,7 @@ public class TimekeepersHourglass extends Artifact {
 		}
 
 		private static final String PRESSES = "presses";
-		private static final String PARTIALTIME = "partialtime";
+		private static final String TURNSTOCOST = "turnsToCost";
 
 		@Override
 		public void storeInBundle(Bundle bundle) {
@@ -357,7 +358,7 @@ public class TimekeepersHourglass extends Artifact {
 				values[i] = presses.get(i);
 			bundle.put( PRESSES , values );
 
-			bundle.put( PARTIALTIME , partialTime );
+			bundle.put( TURNSTOCOST , turnsToCost);
 		}
 
 		@Override
@@ -368,7 +369,7 @@ public class TimekeepersHourglass extends Artifact {
 			for (int value : values)
 				presses.add(value);
 
-			partialTime = bundle.getFloat( PARTIALTIME );
+			turnsToCost = bundle.getFloat( TURNSTOCOST );
 		}
 	}
 

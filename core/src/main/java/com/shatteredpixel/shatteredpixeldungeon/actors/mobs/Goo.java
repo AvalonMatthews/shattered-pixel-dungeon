@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.GooWarn;
@@ -33,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -66,7 +68,7 @@ public class Goo extends Mob {
 	@Override
 	public int damageRoll() {
 		int min = 1;
-		int max = (HP*2 <= HT) ? 15 : 10;
+		int max = (HP*2 <= HT) ? 12 : 8;
 		if (pumpedUp > 0) {
 			pumpedUp = 0;
 			PathFinder.buildDistanceMap( pos, BArray.not( Dungeon.level.solid, null ), 2 );
@@ -109,6 +111,10 @@ public class Goo extends Mob {
 				((GooSprite)sprite).spray(false);
 			}
 			HP++;
+		}
+		
+		if (state != SLEEPING){
+			Dungeon.level.seal();
 		}
 
 		return super.act();
@@ -202,12 +208,6 @@ public class Goo extends Mob {
 		pumpedUp = 0;
 		return super.getCloser( target );
 	}
-	
-	@Override
-	public void move( int step ) {
-		Dungeon.level.seal();
-		super.move( step );
-	}
 
 	@Override
 	public void damage(int dmg, Object src) {
@@ -251,8 +251,16 @@ public class Goo extends Mob {
 	@Override
 	public void notice() {
 		super.notice();
-		BossHealthBar.assignBoss(this);
-		yell( Messages.get(this, "notice") );
+		if (!BossHealthBar.isAssigned()) {
+			BossHealthBar.assignBoss(this);
+			yell(Messages.get(this, "notice"));
+			for (Char ch : Actor.chars()){
+				if (ch instanceof DriedRose.GhostHero){
+					GLog.n("\n");
+					((DriedRose.GhostHero) ch).sayBoss();
+				}
+			}
+		}
 	}
 
 	private final String PUMPEDUP = "pumpedup";

@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
@@ -171,12 +172,14 @@ public class LloydsBeacon extends Artifact {
 						}
 					}
 				}
-				Dungeon.level.press( returnPos, hero );
+				Dungeon.level.occupyCell(hero );
 				Dungeon.observe();
 				GameScene.updateFog();
 			} else {
 
 				Buff buff = Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class);
+				if (buff != null) buff.detach();
+				buff = Dungeon.hero.buff(Swiftthistle.TimeBubble.class);
 				if (buff != null) buff.detach();
 
 				InterlevelScene.mode = InterlevelScene.Mode.RETURN;

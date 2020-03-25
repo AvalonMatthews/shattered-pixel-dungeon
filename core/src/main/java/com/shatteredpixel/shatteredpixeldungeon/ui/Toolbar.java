@@ -84,8 +84,6 @@ public class Toolbar extends Component {
 				Dungeon.hero.rest(true);
 				return true;
 			}
-
-			;
 		});
 		
 		add(btnSearch = new Tool(44, 0, 20, 26) {
@@ -139,15 +137,11 @@ public class Toolbar extends Component {
 				add(gold);
 			}
 
-			;
-
 			@Override
 			protected void layout() {
 				super.layout();
 				gold.fill(this);
 			}
-
-			;
 		});
 
 		add(pickedUp = new PickedUpItem());
@@ -324,12 +318,12 @@ public class Toolbar extends Component {
 		}
 		
 		@Override
-		protected void onTouchDown() {
+		protected void onPointerDown() {
 			base.brightness( 1.4f );
 		}
 		
 		@Override
-		protected void onTouchUp() {
+		protected void onPointerUp() {
 			if (active) {
 				base.resetColor();
 			} else {

@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
@@ -72,6 +73,10 @@ public class Electricity extends Blob {
 						Buff.prolong( ch, Paralysis.class, 1f);
 						if (cur[cell] % 2 == 1) {
 							ch.damage(Math.round(Random.Float(2 + Dungeon.depth / 5f)), this);
+							if (!ch.isAlive() && ch == Dungeon.hero){
+								Dungeon.fail( getClass() );
+								GLog.n( Messages.get(this, "ondeath") );
+							}
 						}
 					}
 					

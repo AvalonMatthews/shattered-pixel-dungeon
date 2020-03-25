@@ -33,27 +33,25 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.MeatPie;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Pasty;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.StewedMeat;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.AlchemicalCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.BlizzardBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.CausticBrew;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.FrigidBrew;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.FrostfireBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.InfernalBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.ShockingBrew;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.WickedBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfAquaticRejuvenation;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfArcaneArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfDragonsBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfHoneyedHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfIcyTouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMight;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfRestoration;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfToxicEssence;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfVitality;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.AquaBlast;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.ArcaneCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.CurseInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.FeatherFall;
@@ -62,9 +60,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalPorter;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene;
@@ -76,6 +73,7 @@ import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.ui.Component;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -111,7 +109,8 @@ public class QuickRecipe extends Component {
 			ArrayList<Item> similar = Dungeon.hero.belongings.getAllSimilar(in);
 			int quantity = 0;
 			for (Item sim : similar) {
-				if (sim.isIdentified()) quantity += sim.quantity();
+				//if we are looking for a specific item, it must be IDed
+				if (sim.getClass() != in.getClass() || sim.isIdentified()) quantity += sim.quantity();
 			}
 			
 			if (quantity < in.quantity()) {
@@ -124,10 +123,10 @@ public class QuickRecipe extends Component {
 		}
 		
 		if (cost > 0) {
-			arrow = new arrow(Icons.get(Icons.RESUME), cost);
+			arrow = new arrow(Icons.get(Icons.ARROW), cost);
 			arrow.hardlightText(0x00CCFF);
 		} else {
-			arrow = new arrow(Icons.get(Icons.RESUME));
+			arrow = new arrow(Icons.get(Icons.ARROW));
 		}
 		if (hasInputs) {
 			arrow.icon.tint(1, 1, 0, 1);
@@ -256,52 +255,13 @@ public class QuickRecipe extends Component {
 			case 1:
 				Recipe r = new Scroll.ScrollToStone();
 				for (Class<?> cls : Generator.Category.SCROLL.classes){
-					try{
-						Scroll scroll = (Scroll) cls.newInstance();
-						ArrayList<Item> in = new ArrayList<Item>(Arrays.asList(scroll));
-						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
-					} catch (Exception e){
-						ShatteredPixelDungeon.reportException(e);
-					}
+					Scroll scroll = (Scroll) Reflection.newInstance(cls);
+					if (!scroll.isKnown()) scroll.anonymize();
+					ArrayList<Item> in = new ArrayList<Item>(Arrays.asList(scroll));
+					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
 				}
 				return result;
 			case 2:
-				r = new TippedDart.TipDart();
-				for (Class<?> cls : Generator.Category.SEED.classes){
-					try{
-						Plant.Seed seed = (Plant.Seed) cls.newInstance();
-						ArrayList<Item> in = new ArrayList<>(Arrays.asList(seed, new Dart()));
-						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
-					} catch (Exception e){
-						ShatteredPixelDungeon.reportException(e);
-					}
-				}
-				return result;
-			case 3:
-				r = new ExoticPotion.PotionToExotic();
-				for (Class<?> cls : Generator.Category.POTION.classes){
-					try{
-						Potion pot = (Potion) cls.newInstance();
-						ArrayList<Item> in = new ArrayList<>(Arrays.asList(pot, new Plant.Seed.PlaceHolder().quantity(2)));
-						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
-					} catch (Exception e){
-						ShatteredPixelDungeon.reportException(e);
-					}
-				}
-				return result;
-			case 4:
-				r = new ExoticScroll.ScrollToExotic();
-				for (Class<?> cls : Generator.Category.SCROLL.classes){
-					try{
-						Scroll scroll = (Scroll) cls.newInstance();
-						ArrayList<Item> in = new ArrayList<>(Arrays.asList(scroll, new Runestone.PlaceHolder().quantity(2)));
-						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
-					} catch (Exception e){
-						ShatteredPixelDungeon.reportException(e);
-					}
-				}
-				return result;
-			case 5:
 				result.add(new QuickRecipe( new StewedMeat.oneMeat() ));
 				result.add(new QuickRecipe( new StewedMeat.twoMeat() ));
 				result.add(new QuickRecipe( new StewedMeat.threeMeat() ));
@@ -325,50 +285,63 @@ public class QuickRecipe extends Component {
 							}
 						}));
 				return result;
-			case 6:
+			case 3:
 				r = new Bomb.EnhanceBomb();
 				int i = 0;
 				for (Class<?> cls : Bomb.EnhanceBomb.validIngredients.keySet()){
-					try{
-						if (i == 2){
-							result.add(null);
-							i = 0;
-						}
-						Item item = (Item) cls.newInstance();
-						ArrayList<Item> in = new ArrayList<Item>(Arrays.asList(new Bomb(), item));
-						result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
-						i++;
-					} catch (Exception e){
-						ShatteredPixelDungeon.reportException(e);
+					if (i == 2){
+						result.add(null);
+						i = 0;
 					}
+					Item item = (Item) Reflection.newInstance(cls);
+					ArrayList<Item> in = new ArrayList<>(Arrays.asList(new Bomb(), item));
+					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+					i++;
 				}
 				return result;
+			case 4:
+				r = new ExoticPotion.PotionToExotic();
+				for (Class<?> cls : Generator.Category.POTION.classes){
+					Potion pot = (Potion) Reflection.newInstance(cls);
+					ArrayList<Item> in = new ArrayList<>(Arrays.asList(pot, new Plant.Seed.PlaceHolder().quantity(2)));
+					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+				}
+				return result;
+			case 5:
+				r = new ExoticScroll.ScrollToExotic();
+				for (Class<?> cls : Generator.Category.SCROLL.classes){
+					Scroll scroll = (Scroll) Reflection.newInstance(cls);
+					ArrayList<Item> in = new ArrayList<>(Arrays.asList(scroll, new Runestone.PlaceHolder().quantity(2)));
+					result.add(new QuickRecipe( r, in, r.sampleOutput(in)));
+				}
+				return result;
+			case 6:
+				result.add(new QuickRecipe(new AlchemicalCatalyst.Recipe(), new ArrayList<>(Arrays.asList(new Potion.PlaceHolder(), new Plant.Seed.PlaceHolder())), new AlchemicalCatalyst()));
+				result.add(new QuickRecipe(new AlchemicalCatalyst.Recipe(), new ArrayList<>(Arrays.asList(new Potion.PlaceHolder(), new Runestone.PlaceHolder())), new AlchemicalCatalyst()));
+				result.add(null);
+				result.add(null);
+				result.add(new QuickRecipe(new ArcaneCatalyst.Recipe(), new ArrayList<>(Arrays.asList(new Scroll.PlaceHolder(), new Runestone.PlaceHolder())), new ArcaneCatalyst()));
+				result.add(new QuickRecipe(new ArcaneCatalyst.Recipe(), new ArrayList<>(Arrays.asList(new Scroll.PlaceHolder(), new Plant.Seed.PlaceHolder())), new ArcaneCatalyst()));
+				return result;
 			case 7:
-				result.add(new QuickRecipe(new WickedBrew.Recipe()));
-				result.add(new QuickRecipe(new FrigidBrew.Recipe()));
-				result.add(new QuickRecipe(new FrostfireBrew.Recipe()));
-				result.add(null);
-				result.add(null);
+				result.add(new QuickRecipe(new CausticBrew.Recipe()));
 				result.add(new QuickRecipe(new InfernalBrew.Recipe()));
 				result.add(new QuickRecipe(new BlizzardBrew.Recipe()));
 				result.add(new QuickRecipe(new ShockingBrew.Recipe()));
-				result.add(new QuickRecipe(new CausticBrew.Recipe()));
-				return result;
-			case 8:
-				result.add(new QuickRecipe(new ElixirOfRestoration.Recipe()));
-				result.add(new QuickRecipe(new ElixirOfVitality.Recipe()));
+				result.add(null);
+				result.add(null);
 				result.add(new QuickRecipe(new ElixirOfHoneyedHealing.Recipe()));
+				result.add(new QuickRecipe(new ElixirOfMight.Recipe()));
 				result.add(new QuickRecipe(new ElixirOfAquaticRejuvenation.Recipe()));
-				result.add(null);
-				result.add(null);
 				result.add(new QuickRecipe(new ElixirOfDragonsBlood.Recipe()));
 				result.add(new QuickRecipe(new ElixirOfIcyTouch.Recipe()));
 				result.add(new QuickRecipe(new ElixirOfToxicEssence.Recipe()));
-				result.add(new QuickRecipe(new ElixirOfMight.Recipe()));
+				result.add(new QuickRecipe(new ElixirOfArcaneArmor.Recipe()));
 				return result;
-			case 9:
+			case 8:
 				result.add(new QuickRecipe(new MagicalPorter.Recipe()));
 				result.add(new QuickRecipe(new PhaseShift.Recipe()));
+				result.add(new QuickRecipe(new WildEnergy.Recipe()));
 				result.add(new QuickRecipe(new BeaconOfReturning.Recipe()));
 				result.add(null);
 				result.add(null);
@@ -377,8 +350,8 @@ public class QuickRecipe extends Component {
 				result.add(new QuickRecipe(new ReclaimTrap.Recipe()));
 				result.add(null);
 				result.add(null);
-				result.add(new QuickRecipe(new MagicalInfusion.Recipe()));
 				result.add(new QuickRecipe(new CurseInfusion.Recipe()));
+				result.add(new QuickRecipe(new MagicalInfusion.Recipe()));
 				result.add(new QuickRecipe(new Alchemize.Recipe()));
 				result.add(new QuickRecipe(new Recycle.Recipe()));
 				return result;

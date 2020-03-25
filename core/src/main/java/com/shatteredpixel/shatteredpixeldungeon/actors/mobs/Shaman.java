@@ -73,6 +73,9 @@ public class Shaman extends Mob implements Callback {
 		return new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
 	}
 	
+	//used so resistances can differentiate between melee and magical attacks
+	public static class LightningBolt{}
+	
 	@Override
 	protected boolean doAttack( Char enemy ) {
 
@@ -82,8 +85,7 @@ public class Shaman extends Mob implements Callback {
 			
 		} else {
 			
-			boolean visible = fieldOfView[pos] || fieldOfView[enemy.pos];
-			if (visible) {
+			if (sprite != null && sprite.visible) {
 				sprite.zap( enemy.pos );
 			}
 			
@@ -94,7 +96,7 @@ public class Shaman extends Mob implements Callback {
 				if (Dungeon.level.water[enemy.pos] && !enemy.flying) {
 					dmg *= 1.5f;
 				}
-				enemy.damage( dmg, this );
+				enemy.damage( dmg, new LightningBolt() );
 				
 				enemy.sprite.centerEmitter().burst( SparkParticle.FACTORY, 3 );
 				enemy.sprite.flash();
@@ -112,7 +114,12 @@ public class Shaman extends Mob implements Callback {
 				enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
 			}
 			
-			return !visible;
+			if (sprite != null && sprite.visible) {
+				sprite.zap( enemy.pos );
+				return false;
+			} else {
+				return true;
+			}
 		}
 	}
 	

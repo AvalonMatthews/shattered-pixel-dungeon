@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Effects;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Elastic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -65,11 +66,9 @@ public class WandOfBlastWave extends DamageWand {
 		Sample.INSTANCE.play( Assets.SND_BLAST );
 		BlastWave.blast(bolt.collisionPos);
 
-		int damage = damageRoll();
-
 		//presses all tiles in the AOE first
 		for (int i : PathFinder.NEIGHBOURS9){
-			Dungeon.level.press(bolt.collisionPos+i, Actor.findChar(bolt.collisionPos+i), true);
+			Dungeon.level.pressCell( bolt.collisionPos+i );
 		}
 
 		//throws other chars around the center.
@@ -78,7 +77,7 @@ public class WandOfBlastWave extends DamageWand {
 
 			if (ch != null){
 				processSoulMark(ch, chargesPerCast());
-				ch.damage(Math.round(damage * 0.667f), this);
+				if (ch.alignment != Char.Alignment.ALLY) ch.damage(damageRoll(), this);
 
 				if (ch.isAlive()) {
 					Ballistica trajectory = new Ballistica(ch.pos, ch.pos + i, Ballistica.MAGIC_BOLT);
@@ -95,7 +94,7 @@ public class WandOfBlastWave extends DamageWand {
 		Char ch = Actor.findChar(bolt.collisionPos);
 		if (ch != null){
 			processSoulMark(ch, chargesPerCast());
-			ch.damage(damage, this);
+			ch.damage(damageRoll(), this);
 
 			if (ch.isAlive() && bolt.path.size() > bolt.dist+1) {
 				Ballistica trajectory = new Ballistica(ch.pos, bolt.path.get(bolt.dist + 1), Ballistica.MAGIC_BOLT);
@@ -128,16 +127,16 @@ public class WandOfBlastWave extends DamageWand {
 		Actor.addDelayed(new Pushing(ch, ch.pos, newPos, new Callback() {
 			public void call() {
 				if (initialpos != ch.pos) {
-					//something cased movement before pushing resolved, cancel to be safe.
+					//something caused movement before pushing resolved, cancel to be safe.
 					ch.sprite.place(ch.pos);
 					return;
 				}
 				ch.pos = newPos;
-				if (ch.pos == trajectory.collisionPos) {
+				if (ch.pos == trajectory.collisionPos && ch.isAlive()) {
 					ch.damage(Random.NormalIntRange((finalDist + 1) / 2, finalDist), this);
 					Paralysis.prolong(ch, Paralysis.class, Random.NormalIntRange((finalDist + 1) / 2, finalDist));
 				}
-				Dungeon.level.press(ch.pos, ch, true);
+				Dungeon.level.occupyCell(ch);
 				if (ch == Dungeon.hero){
 					//FIXME currently no logic here if the throw effect kills the hero
 					Dungeon.observe();
@@ -147,18 +146,8 @@ public class WandOfBlastWave extends DamageWand {
 	}
 
 	@Override
-	//behaves just like glyph of Repulsion
 	public void onHit(MagesStaff staff, Char attacker, Char defender, int damage) {
-		int level = Math.max(0, staff.level());
-
-		// lvl 0 - 25%
-		// lvl 1 - 40%
-		// lvl 2 - 50%
-		if (Random.Int( level + 4 ) >= 3){
-			int oppositeHero = defender.pos + (defender.pos - attacker.pos);
-			Ballistica trajectory = new Ballistica(defender.pos, oppositeHero, Ballistica.MAGIC_BOLT);
-			throwChar(defender, trajectory, 2);
-		}
+		new Elastic().proc(staff, attacker, defender, damage);
 	}
 
 	@Override

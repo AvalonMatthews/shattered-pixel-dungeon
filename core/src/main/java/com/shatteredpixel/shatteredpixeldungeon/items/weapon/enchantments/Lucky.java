@@ -23,10 +23,12 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite.Glowing;
-import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
 public class Lucky extends Weapon.Enchantment {
@@ -36,29 +38,34 @@ public class Lucky extends Weapon.Enchantment {
 	@Override
 	public int proc( Weapon weapon, Char attacker, Char defender, int damage ) {
 		int level = Math.max( 0, weapon.level() );
-		
-		float zeroChance = 0.5f;
-		
-		Luck buff = attacker.buff(Luck.class);
-		if (buff != null){
-			zeroChance = buff.zeroChance;
-		}
-		
-		if (Random.Float() >= zeroChance){
-			
-			if (buff != null) {
-				buff.detach();
-			}
-			
-			return 2*damage;
-		} else {
-			
-			buff = Buff.affect(attacker, Luck.class);
-			buff.zeroChance = zeroChance * (0.5f - (0.01f*level));
-			
-			return 0;
-		}
 
+		// lvl 0 - 10%
+		// lvl 1 ~ 12%
+		// lvl 2 ~ 14%
+		if (defender.HP <= damage
+				&& Random.Int( level + 40 ) >= 36){
+			Buff.affect(defender, LuckProc.class);
+		}
+		
+		return damage;
+
+	}
+	
+	public static Item genLoot(){
+		float roll = Random.Float();
+		if (roll < 0.6f){
+			Item result = new Gold().random();
+			result.quantity(Math.round(result.quantity() * 0.5f));
+			return result;
+		} else if (roll < 0.9f){
+			return Random.Int(2) == 0
+					? Generator.random(Generator.Category.SEED)
+					: Generator.random(Generator.Category.STONE);
+		} else {
+			return Random.Int(2) == 0
+					? Generator.random(Generator.Category.POTION)
+					: Generator.random(Generator.Category.SCROLL);
+		}
 	}
 
 	@Override
@@ -66,39 +73,14 @@ public class Lucky extends Weapon.Enchantment {
 		return GREEN;
 	}
 	
-	
-	public static class Luck extends Buff {
-		
-		float zeroChance;
+	//used to keep track of whether a luck proc is incoming. see Mob.die()
+	public static class LuckProc extends Buff {
 		
 		@Override
 		public boolean act() {
-			
-			zeroChance += 0.01f;
-			
-			if (zeroChance >= 0.5f){
-				detach();
-			} else {
-				spend(TICK);
-			}
-			
+			detach();
 			return true;
 		}
-		
-		private static final String CHANCE = "chance";
-		
-		@Override
-		public void restoreFromBundle(Bundle bundle) {
-			super.restoreFromBundle(bundle);
-			zeroChance = bundle.getFloat(CHANCE);
-		}
-		
-		@Override
-		public void storeInBundle(Bundle bundle) {
-			super.storeInBundle(bundle);
-			bundle.put(CHANCE, zeroChance);
-		}
-		
 	}
 	
 }

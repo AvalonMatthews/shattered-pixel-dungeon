@@ -182,11 +182,6 @@ public class CavesBossLevel extends Level {
 	}
 	
 	@Override
-	public Mob createMob() {
-		return null;
-	}
-	
-	@Override
 	protected void createMobs() {
 	}
 	
@@ -208,26 +203,26 @@ public class CavesBossLevel extends Level {
 	
 	@Override
 	public int randomRespawnCell() {
-		int cell = entrance + PathFinder.NEIGHBOURS8[Random.Int(8)];
-		while (!passable[cell]){
+		int cell;
+		do {
 			cell = entrance + PathFinder.NEIGHBOURS8[Random.Int(8)];
-		}
+		} while (!passable[cell] || Actor.findChar(cell) != null);
 		return cell;
 	}
 	
 	@Override
-	public void press( int cell, Char hero ) {
+	public void occupyCell( Char ch ) {
 		
-		super.press( cell, hero );
+		super.occupyCell( ch );
 		
-		if (!enteredArena && outsideEntraceRoom( cell ) && hero == Dungeon.hero) {
+		if (!enteredArena && outsideEntraceRoom( ch.pos ) && ch == Dungeon.hero) {
 			
 			enteredArena = true;
 			seal();
 			
 			for (Mob m : mobs){
 				//bring the first ally with you
-				if (m.alignment == Char.Alignment.ALLY){
+				if (m.alignment == Char.Alignment.ALLY && !m.properties().contains(Char.Property.IMMOVABLE)){
 					m.pos = Dungeon.hero.pos + (Random.Int(2) == 0 ? +1 : -1);
 					m.sprite.place(m.pos);
 					break;

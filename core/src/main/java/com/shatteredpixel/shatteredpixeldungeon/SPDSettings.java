@@ -24,7 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.GameSettings;
@@ -58,12 +57,7 @@ public class SPDSettings extends GameSettings {
 	public static void fullscreen( boolean value ) {
 		put( KEY_FULLSCREEN, value );
 		
-		ShatteredPixelDungeon.instance.runOnUiThread( new Runnable() {
-			@Override
-			public void run() {
-				ShatteredPixelDungeon.updateSystemUI();
-			}
-		} );
+		ShatteredPixelDungeon.updateSystemUI();
 	}
 	
 	public static boolean fullscreen() {
@@ -79,6 +73,14 @@ public class SPDSettings extends GameSettings {
 	//there should be an option to check for landscape the setting, and actual screen size
 	public static boolean landscape() {
 		return getBoolean(KEY_LANDSCAPE, Game.dispWidth > Game.dispHeight);
+	}
+	
+	public static Boolean landscapeFromSettings(){
+		if (contains(KEY_LANDSCAPE)){
+			return getBoolean(KEY_LANDSCAPE, false);
+		} else {
+			return null;
+		}
 	}
 	
 	public static void powerSaver( boolean value ){
@@ -248,16 +250,11 @@ public class SPDSettings extends GameSettings {
 	
 	public static void systemFont(boolean value){
 		put(KEY_SYSTEMFONT, value);
-		if (!value) {
-			RenderedText.setFont("pixelfont.ttf");
-		} else {
-			RenderedText.setFont( null );
-		}
 	}
 	
 	public static boolean systemFont(){
 		return getBoolean(KEY_SYSTEMFONT,
-				(language() == Languages.KOREAN || language() == Languages.CHINESE));
+				(language() == Languages.KOREAN || language() == Languages.CHINESE || language() == Languages.JAPANESE));
 	}
 	
 }

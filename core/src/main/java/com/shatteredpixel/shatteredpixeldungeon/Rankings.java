@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -33,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
+import com.watabou.noosa.Game;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.FileUtils;
@@ -161,6 +163,7 @@ public enum Rankings {
 	public void loadGameData(Record rec){
 		Bundle data = rec.gameData;
 
+		Actor.clear();
 		Dungeon.hero = null;
 		Dungeon.level = null;
 		Generator.reset();
@@ -236,7 +239,7 @@ public enum Rankings {
 		} catch (IOException e) {
 		}
 	}
-
+	
 	public static class Record implements Bundlable {
 
 		private static final String CAUSE   = "cause";
@@ -320,7 +323,12 @@ public enum Rankings {
 	private static final Comparator<Record> scoreComparator = new Comparator<Rankings.Record>() {
 		@Override
 		public int compare( Record lhs, Record rhs ) {
-			return (int)Math.signum( rhs.score - lhs.score );
+			int result = (int)Math.signum( rhs.score - lhs.score );
+			if (result == 0) {
+				return (int)Math.signum( rhs.gameID.hashCode() - lhs.gameID.hashCode());
+			} else{
+				return result;
+			}
 		}
 	};
 }

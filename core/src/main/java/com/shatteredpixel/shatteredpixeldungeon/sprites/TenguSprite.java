@@ -23,16 +23,12 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
-import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Shuriken;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.noosa.TextureFilm;
 import com.watabou.utils.Callback;
 
 public class TenguSprite extends MobSprite {
-	
-	private Animation cast;
 	
 	public TenguSprite() {
 		super();
@@ -50,12 +46,18 @@ public class TenguSprite extends MobSprite {
 		attack = new Animation( 15, false );
 		attack.frames( frames, 6, 7, 7, 0 );
 		
-		cast = attack.clone();
+		zap = attack.clone();
 		
 		die = new Animation( 8, false );
 		die.frames( frames, 8, 9, 10, 10, 10, 10, 10, 10 );
 		
 		play( run.clone() );
+	}
+	
+	@Override
+	public void idle() {
+		isMoving = false;
+		super.idle();
 	}
 	
 	@Override
@@ -78,18 +80,15 @@ public class TenguSprite extends MobSprite {
 	public void attack( int cell ) {
 		if (!Dungeon.level.adjacent( cell, ch.pos )) {
 
-			final Char enemy = Actor.findChar(cell);
-
 			((MissileSprite)parent.recycle( MissileSprite.class )).
-				reset( ch.pos, cell, new Shuriken(), new Callback() {
+				reset( ch.pos, cell, new TenguShuriken(), new Callback() {
 					@Override
 					public void call() {
-						ch.next();
-						if (enemy != null) ch.attack(enemy);
+						ch.onAttackComplete();
 					}
 				} );
 			
-			play( cast );
+			play( zap );
 			turnTo( ch.pos , cell );
 			
 		} else {
@@ -110,6 +109,12 @@ public class TenguSprite extends MobSprite {
 			}
 		} else {
 			super.onComplete( anim );
+		}
+	}
+	
+	public static class TenguShuriken extends Item {
+		{
+			image = ItemSpriteSheet.SHURIKEN;
 		}
 	}
 }

@@ -40,10 +40,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfPsionicBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -175,13 +177,21 @@ public class Yog extends Mob {
 	@Override
 	public void notice() {
 		super.notice();
-		BossHealthBar.assignBoss(this);
-		yell( Messages.get(this, "notice") );
+		if (!BossHealthBar.isAssigned()) {
+			BossHealthBar.assignBoss(this);
+			yell(Messages.get(this, "notice"));
+			for (Char ch : Actor.chars()){
+				if (ch instanceof DriedRose.GhostHero){
+					GLog.n("\n");
+					((DriedRose.GhostHero) ch).sayBoss();
+				}
+			}
+		}
 	}
 	
 	{
-		
 		immunities.add( Grim.class );
+		immunities.add( GrimTrap.class );
 		immunities.add( Terror.class );
 		immunities.add( Amok.class );
 		immunities.add( Charm.class );
@@ -310,6 +320,9 @@ public class Yog extends Mob {
 			return new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
 		}
 		
+		//used so resistances can differentiate between melee and magical attacks
+		public static class DarkBolt{}
+		
 		@Override
 		public boolean attack( Char enemy ) {
 			
@@ -319,7 +332,7 @@ public class Yog extends Mob {
 				if (hit( this, enemy, true )) {
 					
 					int dmg =  damageRoll();
-					enemy.damage( dmg, this );
+					enemy.damage( dmg, new DarkBolt() );
 					
 					enemy.sprite.bloodBurstA( sprite.center(), dmg );
 					enemy.sprite.flash();
@@ -358,10 +371,6 @@ public class Yog extends Mob {
 		}
 		
 		{
-			resistances.add( ToxicGas.class );
-		}
-		
-		{
 			immunities.add( Amok.class );
 			immunities.add( Sleep.class );
 			immunities.add( Terror.class );
@@ -378,6 +387,7 @@ public class Yog extends Mob {
 			defenseSkill = 20;
 			
 			EXP = 0;
+			maxLvl = -2;
 			
 			state = HUNTING;
 

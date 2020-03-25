@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArcaneArmor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -57,11 +58,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Potential;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfElements;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfPsionicBlast;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
@@ -72,6 +75,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Shoc
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Door;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -126,6 +130,43 @@ public abstract class Char extends Actor {
 		}
 		Dungeon.level.updateFieldOfView( this, fieldOfView );
 		return false;
+	}
+
+	public boolean canInteract( Hero h ){
+		return Dungeon.level.adjacent( pos, h.pos );
+	}
+	
+	//swaps places by default
+	public boolean interact(){
+		
+		if (!Dungeon.level.passable[pos] && !Dungeon.hero.flying){
+			return true;
+		}
+		
+		int curPos = pos;
+		
+		moveSprite( pos, Dungeon.hero.pos );
+		move( Dungeon.hero.pos );
+		
+		Dungeon.hero.sprite.move( Dungeon.hero.pos, curPos );
+		Dungeon.hero.move( curPos );
+		
+		Dungeon.hero.spend( 1 / Dungeon.hero.speed() );
+		Dungeon.hero.busy();
+		
+		return true;
+	}
+	
+	protected boolean moveSprite( int from, int to ) {
+		
+		if (sprite.isVisible() && (Dungeon.level.heroFOV[from] || Dungeon.level.heroFOV[to])) {
+			sprite.move( from, to );
+			return true;
+		} else {
+			sprite.turnTo(from, to);
+			sprite.place( to );
+			return true;
+		}
 	}
 	
 	protected static final String POS       = "pos";
@@ -236,6 +277,10 @@ public abstract class Char extends Actor {
 
 			if (!enemy.isAlive() && visibleFight) {
 				if (enemy == Dungeon.hero) {
+					
+					if (this == Dungeon.hero) {
+						return true;
+					}
 
 					Dungeon.fail( getClass() );
 					GLog.n( Messages.capitalize(Messages.get(Char.class, "kill", name)) );
@@ -353,6 +398,12 @@ public abstract class Char extends Actor {
 			dmg = Math.round( dmg * resist( srcClass ));
 		}
 		
+		//TODO improve this when I have proper damage source logic
+		if (AntiMagic.RESISTS.contains(src.getClass()) && buff(ArcaneArmor.class) != null){
+			dmg -= Random.NormalIntRange(0, buff(ArcaneArmor.class).level());
+			if (dmg < 0) dmg = 0;
+		}
+		
 		if (buff( Paralysis.class ) != null) {
 			buff( Paralysis.class ).processDamage(dmg);
 		}
@@ -368,10 +419,12 @@ public abstract class Char extends Actor {
 		shielded -= dmg;
 		HP -= dmg;
 		
-		sprite.showStatus( HP > HT / 2 ?
-			CharSprite.WARNING :
-			CharSprite.NEGATIVE,
-			Integer.toString( dmg + shielded ) );
+		if (sprite != null) {
+			sprite.showStatus(HP > HT / 2 ?
+							CharSprite.WARNING :
+							CharSprite.NEGATIVE,
+					Integer.toString(dmg + shielded));
+		}
 
 		if (HP < 0) HP = 0;
 
@@ -515,17 +568,11 @@ public abstract class Char extends Actor {
 
 		pos = step;
 		
-		if (flying && Dungeon.level.map[pos] == Terrain.DOOR) {
-			Door.enter( pos );
-		}
-		
 		if (this != Dungeon.hero) {
 			sprite.visible = Dungeon.level.heroFOV[pos];
 		}
 		
-		if (!flying) {
-			Dungeon.level.press( pos, this );
-		}
+		Dungeon.level.occupyCell(this );
 	}
 	
 	public int distance( Char other ) {
@@ -594,8 +641,8 @@ public abstract class Char extends Actor {
 	}
 
 	public enum Property{
-		BOSS ( new HashSet<Class>( Arrays.asList(Grim.class, ScrollOfRetribution.class, ScrollOfPsionicBlast.class)),
-				new HashSet<Class>( Arrays.asList(Corruption.class) )),
+		BOSS ( new HashSet<Class>( Arrays.asList(Grim.class, GrimTrap.class, ScrollOfRetribution.class, ScrollOfPsionicBlast.class)),
+				new HashSet<Class>( Arrays.asList(Corruption.class, StoneOfAggression.Aggression.class) )),
 		MINIBOSS ( new HashSet<Class>(),
 				new HashSet<Class>( Arrays.asList(Corruption.class) )),
 		UNDEAD,
@@ -606,7 +653,7 @@ public abstract class Char extends Actor {
 				new HashSet<Class>( Arrays.asList(Blob.class) )),
 		FIERY ( new HashSet<Class>( Arrays.asList(WandOfFireblast.class)),
 				new HashSet<Class>( Arrays.asList(Burning.class, Blazing.class))),
-		ACIDIC ( new HashSet<Class>( Arrays.asList(ToxicGas.class, Corrosion.class)),
+		ACIDIC ( new HashSet<Class>( Arrays.asList(Corrosion.class)),
 				new HashSet<Class>( Arrays.asList(Ooze.class))),
 		ELECTRIC ( new HashSet<Class>( Arrays.asList(WandOfLightning.class, Shocking.class, Potential.class, Electricity.class, ShockingDart.class)),
 				new HashSet<Class>()),

@@ -35,8 +35,8 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
@@ -82,34 +82,7 @@ public class Heap implements Bundlable {
 	public boolean seen = false;
 	public boolean haunted = false;
 	
-	public LinkedList<Item> items = new LinkedList<Item>();
-	
-	public int image() {
-		switch (type) {
-		case HEAP:
-		case FOR_SALE:
-			return size() > 0 ? items.peek().image() : 0;
-		case CHEST:
-		case MIMIC:
-			return ItemSpriteSheet.CHEST;
-		case LOCKED_CHEST:
-			return ItemSpriteSheet.LOCKED_CHEST;
-		case CRYSTAL_CHEST:
-			return ItemSpriteSheet.CRYSTAL_CHEST;
-		case TOMB:
-			return ItemSpriteSheet.TOMB;
-		case SKELETON:
-			return ItemSpriteSheet.BONES;
-		case REMAINS:
-			return ItemSpriteSheet.REMAINS;
-		default:
-			return 0;
-		}
-	}
-	
-	public ItemSprite.Glowing glowing() {
-		return (type == Type.HEAP || type == Type.FOR_SALE) && items.size() > 0 ? items.peek().glowing() : null;
-	}
+	public LinkedList<Item> items = new LinkedList<>();
 	
 	public void open( Hero hero ) {
 		switch (type) {
@@ -140,10 +113,15 @@ public class Heap implements Bundlable {
 
 		if (type != Type.MIMIC) {
 			type = Type.HEAP;
-			ArrayList<Item> bonus = RingOfWealth.tryRareDrop(hero, 1);
-			if (bonus != null){
+			ArrayList<Item> bonus = RingOfWealth.tryForBonusDrop(hero, 1);
+			if (bonus != null && !bonus.isEmpty()) {
 				items.addAll(0, bonus);
-				new Flare(8, 32).color(0xFFFF00, true).show(sprite, 2f);
+				if (RingOfWealth.latestDropWasRare){
+					new Flare(8, 48).color(0xAA00FF, true).show(sprite, 2f);
+					RingOfWealth.latestDropWasRare = false;
+				} else {
+					new Flare(8, 24).color(0xFFFFFF, true).show(sprite, 2f);
+				}
 			}
 			sprite.link();
 			sprite.drop();
@@ -175,8 +153,7 @@ public class Heap implements Bundlable {
 		if (items.isEmpty()) {
 			destroy();
 		} else if (sprite != null) {
-			sprite.view( image(), glowing() );
-			sprite.place( pos );
+			sprite.view(this).place( pos );
 		}
 		
 		return item;
@@ -200,18 +177,14 @@ public class Heap implements Bundlable {
 			
 		}
 		
-		if ((item instanceof Dewdrop || item instanceof DriedRose.Petal) && type != Type.FOR_SALE) {
+		if (item.dropsDownHeap && type != Type.FOR_SALE) {
 			items.add( item );
 		} else {
 			items.addFirst( item );
 		}
 		
 		if (sprite != null) {
-			if (type == Type.HEAP || type == Type.FOR_SALE)
-				sprite.view( items.peek() );
-			else
-				sprite.view( image(), glowing() );
-			sprite.place( pos );
+			sprite.view(this).place( pos );
 		}
 	}
 	
@@ -220,6 +193,15 @@ public class Heap implements Bundlable {
 		if (index != -1) {
 			items.remove( index );
 			items.add( index, b );
+		}
+	}
+	
+	public void remove( Item a ){
+		items.remove(a);
+		if (items.isEmpty()){
+			destroy();
+		} else if (sprite != null) {
+			sprite.view(this).place( pos );
 		}
 	}
 	
@@ -277,7 +259,7 @@ public class Heap implements Bundlable {
 			if (isEmpty()) {
 				destroy();
 			} else if (sprite != null) {
-				sprite.view( items.peek() );
+				sprite.view(this).place( pos );
 			}
 			
 		}
@@ -315,7 +297,8 @@ public class Heap implements Bundlable {
 					}
 
 				//unique and upgraded items can endure the blast
-				} else if (!(item.level() > 0 || item.unique))
+				} else if (!(item.level() > 0 || item.unique
+						|| (item instanceof Armor && ((Armor) item).checkSeal() != null)))
 					items.remove( item );
 
 			}
@@ -323,7 +306,7 @@ public class Heap implements Bundlable {
 			if (isEmpty()){
 				destroy();
 			} else if (sprite != null) {
-				sprite.view( items.peek() );
+				sprite.view(this).place( pos );
 			}
 		}
 	}
@@ -361,7 +344,7 @@ public class Heap implements Bundlable {
 			if (isEmpty()) {
 				destroy();
 			} else if (sprite != null) {
-				sprite.view( items.peek() );
+				sprite.view(this).place( pos );
 			}
 		}
 	}
@@ -446,7 +429,7 @@ public class Heap implements Bundlable {
 		seen = bundle.getBoolean( SEEN );
 		type = Type.valueOf( bundle.getString( TYPE ) );
 		
-		items = new LinkedList<Item>( (Collection<Item>) ((Collection<?>) bundle.getCollection( ITEMS )) );
+		items = new LinkedList<>((Collection<Item>) ((Collection<?>) bundle.getCollection(ITEMS)));
 		items.removeAll(Collections.singleton(null));
 		
 		//remove any document pages that either don't exist anymore or that the player already has

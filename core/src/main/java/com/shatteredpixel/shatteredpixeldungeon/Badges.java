@@ -32,7 +32,6 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Callback;
 import com.watabou.utils.FileUtils;
 
 import java.io.IOException;
@@ -163,11 +162,9 @@ public class Badges {
 	}
 	
 	private static HashSet<Badge> global;
-	private static HashSet<Badge> local = new HashSet<Badges.Badge>();
+	private static HashSet<Badge> local = new HashSet<>();
 	
 	private static boolean saveNeeded = false;
-
-	public static Callback loadingListener = null;
 
 	public static void reset() {
 		local.clear();
@@ -179,9 +176,6 @@ public class Badges {
 	
 	private static final HashSet<String> removedBadges = new HashSet<>();
 	static{
-		//removed in 0.6.1
-		removedBadges.add("NIGHT_HUNTER");
-
 		//removed in 0.6.5
 		removedBadges.addAll(Arrays.asList("RARE_ALBINO", "RARE_BANDIT", "RARE_SHIELDED",
 				"RARE_SENIOR", "RARE_ACIDIC", "RARE", "TUTORIAL_WARRIOR", "TUTORIAL_MAGE"));
@@ -193,8 +187,8 @@ public class Badges {
 		renamedBadges.put("CHAMPION", "CHAMPION_1");
 	}
 
-	private static HashSet<Badge> restore( Bundle bundle ) {
-		HashSet<Badge> badges = new HashSet<Badge>();
+	public static HashSet<Badge> restore( Bundle bundle ) {
+		HashSet<Badge> badges = new HashSet<>();
 		if (bundle == null) return badges;
 		
 		String[] names = bundle.getStringArray( BADGES );
@@ -213,8 +207,8 @@ public class Badges {
 	
 		return badges;
 	}
-
-	private static void store( Bundle bundle, HashSet<Badge> badges ) {
+	
+	public static void store( Bundle bundle, HashSet<Badge> badges ) {
 		int count = 0;
 		String names[] = new String[badges.size()];
 		
@@ -239,7 +233,7 @@ public class Badges {
 				global = restore( bundle );
 				
 			} catch (IOException e) {
-				global = new HashSet<Badge>();
+				global = new HashSet<>();
 			}
 		}
 	}
@@ -841,6 +835,11 @@ public class Badges {
 		return global.contains( badge );
 	}
 	
+	public static HashSet<Badge> allUnlocked(){
+		loadGlobal();
+		return new HashSet<>(global);
+	}
+	
 	public static void disown( Badge badge ) {
 		loadGlobal();
 		global.remove( badge );
@@ -856,7 +855,7 @@ public class Badges {
 	
 	public static List<Badge> filtered( boolean global ) {
 		
-		HashSet<Badge> filtered = new HashSet<Badge>( global ? Badges.global : Badges.local );
+		HashSet<Badge> filtered = new HashSet<>(global ? Badges.global : Badges.local);
 
 		Iterator<Badge> iterator = filtered.iterator();
 		while (iterator.hasNext()) {
@@ -890,7 +889,7 @@ public class Badges {
 		leaveBest( filtered, Badge.GAMES_PLAYED_1, Badge.GAMES_PLAYED_2, Badge.GAMES_PLAYED_3, Badge.GAMES_PLAYED_4 );
 		leaveBest( filtered, Badge.CHAMPION_1, Badge.CHAMPION_2, Badge.CHAMPION_3 );
 		
-		ArrayList<Badge> list = new ArrayList<Badge>( filtered );
+		ArrayList<Badge> list = new ArrayList<>(filtered);
 		Collections.sort( list );
 		
 		return list;

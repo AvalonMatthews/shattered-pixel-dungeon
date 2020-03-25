@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.WeakFloorRoom;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
@@ -43,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 public class Chasm {
@@ -50,20 +52,25 @@ public class Chasm {
 	public static boolean jumpConfirmed = false;
 	
 	public static void heroJump( final Hero hero ) {
-		GameScene.show(
-			new WndOptions( Messages.get(Chasm.class, "chasm"),
-						Messages.get(Chasm.class, "jump"),
-						Messages.get(Chasm.class, "yes"),
-						Messages.get(Chasm.class, "no") ) {
-				@Override
-				protected void onSelect( int index ) {
-					if (index == 0) {
-						jumpConfirmed = true;
-						hero.resume();
-					}
-				}
+		Game.runOnRenderThread(new Callback() {
+			@Override
+			public void call() {
+				GameScene.show(
+						new WndOptions( Messages.get(Chasm.class, "chasm"),
+								Messages.get(Chasm.class, "jump"),
+								Messages.get(Chasm.class, "yes"),
+								Messages.get(Chasm.class, "no") ) {
+							@Override
+							protected void onSelect( int index ) {
+								if (index == 0) {
+									jumpConfirmed = true;
+									hero.resume();
+								}
+							}
+						}
+				);
 			}
-		);
+		});
 	}
 	
 	public static void heroFall( int pos ) {
@@ -73,6 +80,8 @@ public class Chasm {
 		Sample.INSTANCE.play( Assets.SND_FALLING );
 
 		Buff buff = Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class);
+		if (buff != null) buff.detach();
+		buff = Dungeon.hero.buff(Swiftthistle.TimeBubble.class);
 		if (buff != null) buff.detach();
 		
 		if (Dungeon.hero.isAlive()) {
@@ -104,7 +113,7 @@ public class Chasm {
 		
 		Camera.main.shake( 4, 1f );
 
-		Dungeon.level.press( hero.pos, hero, true );
+		Dungeon.level.occupyCell(hero );
 		Buff.prolong( hero, Cripple.class, Cripple.DURATION );
 
 		//The lower the hero's HP, the more bleed and the less upfront damage.
@@ -122,7 +131,7 @@ public class Chasm {
 	}
 
 	public static void mobFall( Mob mob ) {
-		mob.die( Chasm.class );
+		if (mob.isAlive()) mob.die( Chasm.class );
 		
 		((MobSprite)mob.sprite).fall();
 	}

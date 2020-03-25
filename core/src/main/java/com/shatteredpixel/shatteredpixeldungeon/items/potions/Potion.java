@@ -25,7 +25,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -73,6 +72,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -139,6 +139,8 @@ public class Potion extends Item {
 	
 	private static final HashSet<Class<?extends Potion>> canThrowPots = new HashSet<>();
 	static{
+		canThrowPots.add(AlchemicalCatalyst.class);
+		
 		canThrowPots.add(PotionOfPurity.class);
 		canThrowPots.add(PotionOfLevitation.class);
 		
@@ -261,7 +263,7 @@ public class Potion extends Item {
 								if (index == 0) {
 									drink( hero );
 								}
-							};
+							}
 						}
 					);
 					
@@ -288,7 +290,7 @@ public class Potion extends Item {
 						if (index == 0) {
 							Potion.super.doThrow( hero );
 						}
-					};
+					}
 				}
 			);
 			
@@ -318,7 +320,7 @@ public class Potion extends Item {
 			
 		} else  {
 
-			Dungeon.level.press( cell, null, true );
+			Dungeon.level.pressCell( cell );
 			shatter( cell );
 			
 		}
@@ -408,7 +410,7 @@ public class Potion extends Item {
 	}
 	
 	protected int splashColor(){
-		return ItemSprite.pick( image, 5, 9 );
+		return anonymous ? 0x00AAFF : ItemSprite.pick( image, 5, 9 );
 	}
 	
 	protected void splash( int cell ) {
@@ -434,6 +436,23 @@ public class Potion extends Item {
 		return 30 * quantity;
 	}
 	
+	public static class PlaceHolder extends Potion {
+		
+		{
+			image = ItemSpriteSheet.POTION_HOLDER;
+		}
+		
+		@Override
+		public boolean isSimilar(Item item) {
+			return ExoticPotion.regToExo.containsKey(item.getClass())
+					|| ExoticPotion.regToExo.containsValue(item.getClass());
+		}
+		
+		@Override
+		public String info() {
+			return "";
+		}
+	}
 	
 	public static class SeedToPotion extends Recipe {
 		
@@ -497,14 +516,7 @@ public class Potion extends Item {
 				result = Generator.random( Generator.Category.POTION );
 				
 			} else {
-				
-				Class<? extends Potion> itemClass = types.get(Random.element(ingredients).getClass());
-				try {
-					result = itemClass.newInstance();
-				} catch (Exception e) {
-					ShatteredPixelDungeon.reportException(e);
-					result = Generator.random( Generator.Category.POTION );
-				}
+				result = Reflection.newInstance(types.get(Random.element(ingredients).getClass()));
 				
 			}
 			

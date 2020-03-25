@@ -42,11 +42,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
-import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDetectCurse;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Boomerang;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant.Seed;
@@ -56,12 +54,12 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemSlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
 
 public class WndBag extends WndTabbed {
@@ -87,7 +85,6 @@ public class WndBag extends WndTabbed {
 		POTION,
 		SCROLL,
 		UNIDED_POTION_OR_SCROLL,
-		CURSE_DETECTABLE,
 		EQUIPMENT,
 		TRANMSUTABLE,
 		ALCHEMY,
@@ -188,11 +185,13 @@ public class WndBag extends WndTabbed {
 	
 	protected void placeTitle( Bag bag, int width ){
 		
-		RenderedText txtTitle = PixelScene.renderText(
+		RenderedTextBlock txtTitle = PixelScene.renderTextBlock(
 				title != null ? Messages.titleCase(title) : Messages.titleCase( bag.name() ), 9 );
 		txtTitle.hardlight( TITLE_COLOR );
-		txtTitle.x = 1;
-		txtTitle.y = (int)(TITLE_HEIGHT - txtTitle.baseLine()) / 2f - 1;
+		txtTitle.setPos(
+				1,
+				(TITLE_HEIGHT - txtTitle.height()) / 2f - 1
+		);
 		PixelScene.align(txtTitle);
 		add( txtTitle );
 		
@@ -392,7 +391,7 @@ public class WndBag extends WndTabbed {
 						mode == Mode.UNCURSABLE && ScrollOfRemoveCurse.uncursable(item) ||
 						mode == Mode.CURSABLE && ((item instanceof EquipableItem && !(item instanceof MissileWeapon)) || item instanceof Wand) ||
 						mode == Mode.QUICKSLOT && (item.defaultAction != null) ||
-						mode == Mode.WEAPON && (item instanceof MeleeWeapon || item instanceof Boomerang) ||
+						mode == Mode.WEAPON && (item instanceof MeleeWeapon) ||
 						mode == Mode.ARMOR && (item instanceof Armor) ||
 						mode == Mode.ENCHANTABLE && (item instanceof MeleeWeapon || item instanceof SpiritBow || item instanceof Armor) ||
 						mode == Mode.WAND && (item instanceof Wand) ||
@@ -401,8 +400,7 @@ public class WndBag extends WndTabbed {
 						mode == Mode.POTION && (item instanceof Potion) ||
 						mode == Mode.SCROLL && (item instanceof Scroll) ||
 						mode == Mode.UNIDED_POTION_OR_SCROLL && (!item.isIdentified() && (item instanceof Scroll || item instanceof Potion)) ||
-						mode == Mode.CURSE_DETECTABLE && StoneOfDetectCurse.canDetectCurse(item) ||
-						mode == Mode.EQUIPMENT && (item instanceof EquipableItem) ||
+						mode == Mode.EQUIPMENT && (item instanceof EquipableItem || item instanceof Wand) ||
 						mode == Mode.ALCHEMY && Recipe.usableInRecipe(item) ||
 						mode == Mode.TRANMSUTABLE && ScrollOfTransmutation.canTransmute(item) ||
 						mode == Mode.NOT_EQUIPPED && !item.isEquipped(Dungeon.hero) ||
@@ -416,14 +414,14 @@ public class WndBag extends WndTabbed {
 		}
 		
 		@Override
-		protected void onTouchDown() {
+		protected void onPointerDown() {
 			bg.brightness( 1.5f );
 			Sample.INSTANCE.play( Assets.SND_CLICK, 0.7f, 0.7f, 1.2f );
-		};
+		}
 		
-		protected void onTouchUp() {
+		protected void onPointerUp() {
 			bg.brightness( 1.0f );
-		};
+		}
 		
 		@Override
 		protected void onClick() {

@@ -21,9 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
-import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -32,20 +31,19 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Fireball;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextMultiline;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndStartGame;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.audio.Sample;
-import com.watabou.utils.Bundle;
 import com.watabou.utils.FileUtils;
 
 public class WelcomeScene extends PixelScene {
 
-	private static int LATEST_UPDATE = ShatteredPixelDungeon.v0_7_1;
+	private static int LATEST_UPDATE = ShatteredPixelDungeon.v0_7_5;
 
 	@Override
 	public void create() {
@@ -66,14 +64,15 @@ public class WelcomeScene extends PixelScene {
 		Image title = BannerSprites.get( BannerSprites.Type.PIXEL_DUNGEON );
 		title.brightness(0.6f);
 		add( title );
-
-		float topRegion = Math.max(95f, h*0.45f);
-
+		
+		float topRegion = Math.max(title.height, h*0.45f);
+		
 		title.x = (w - title.width()) / 2f;
-		if (SPDSettings.landscape())
+		if (SPDSettings.landscape()) {
 			title.y = (topRegion - title.height()) / 2f;
-		else
-			title.y = 16 + (topRegion - title.height() - 16) / 2f;
+		} else {
+			title.y = 20 + (topRegion - title.height() - 20) / 2f;
+		}
 
 		align(title);
 
@@ -95,8 +94,8 @@ public class WelcomeScene extends PixelScene {
 		signs.x = title.x + (title.width() - signs.width())/2f;
 		signs.y = title.y;
 		add( signs );
-
-		DarkRedButton okay = new DarkRedButton(Messages.get(this, "continue")){
+		
+		StyledButton okay = new StyledButton(Chrome.Type.GREY_BUTTON_TR, Messages.get(this, "continue")){
 			@Override
 			protected void onClick() {
 				super.onClick();
@@ -110,8 +109,9 @@ public class WelcomeScene extends PixelScene {
 			}
 		};
 
+		//FIXME these buttons are very low on 18:9 devices
 		if (previousVersion != 0){
-			DarkRedButton changes = new DarkRedButton(Messages.get(this, "changelist")){
+			StyledButton changes = new StyledButton(Chrome.Type.GREY_BUTTON_TR, Messages.get(TitleScene.class, "changes")){
 				@Override
 				protected void onClick() {
 					super.onClick();
@@ -119,20 +119,20 @@ public class WelcomeScene extends PixelScene {
 					ShatteredPixelDungeon.switchScene(ChangesScene.class);
 				}
 			};
-			okay.setRect(title.x, h-20, (title.width()/2)-2, 16);
-			okay.textColor(0xBBBB33);
+			okay.setRect(title.x, h-25, (title.width()/2)-2, 21);
 			add(okay);
 
-			changes.setRect(okay.right()+2, h-20, (title.width()/2)-2, 16);
-			changes.textColor(0xBBBB33);
+			changes.setRect(okay.right()+2, h-25, (title.width()/2)-2, 21);
+			changes.icon(Icons.get(Icons.CHANGES));
 			add(changes);
 		} else {
-			okay.setRect(title.x, h-20, title.width(), 16);
-			okay.textColor(0xBBBB33);
+			okay.text(Messages.get(TitleScene.class, "enter"));
+			okay.setRect(title.x, h-25, title.width(), 21);
+			okay.icon(Icons.get(Icons.ENTER));
 			add(okay);
 		}
 
-		RenderedTextMultiline text = PixelScene.renderMultiline(6);
+		RenderedTextBlock text = PixelScene.renderTextBlock(6);
 		String message;
 		if (previousVersion == 0) {
 			message = Messages.get(this, "welcome_msg");
@@ -187,46 +187,8 @@ public class WelcomeScene extends PixelScene {
 			Journal.loadGlobal();
 			Document.ALCHEMY_GUIDE.addPage("Potions");
 			Document.ALCHEMY_GUIDE.addPage("Stones");
-			Document.ALCHEMY_GUIDE.addPage("Darts");
+			Document.ALCHEMY_GUIDE.addPage("Energy_Food");
 			Journal.saveGlobal();
-		}
-		
-		//convert game saves from the old format
-		if (previousVersion <= ShatteredPixelDungeon.v0_6_2e){
-			//old save file names for warrior, mage, rogue, huntress
-			String[] classes = new String[]{"warrior", "mage", "game", "ranger"};
-			for (int i = 1; i <= classes.length; i++){
-				String name = classes[i-1];
-				if (FileUtils.fileExists(name + ".dat")){
-					try {
-						Bundle gamedata = FileUtils.bundleFromFile(name + ".dat");
-						FileUtils.bundleToFile(GamesInProgress.gameFile(i), gamedata);
-						FileUtils.deleteFile(name + ".dat");
-						
-						//rogue's safe files have a different name
-						if (name.equals("game")) name = "depth";
-						
-						int depth = 1;
-						while (FileUtils.fileExists(name + depth + ".dat")) {
-							gamedata = FileUtils.bundleFromFile(name + depth + ".dat");
-							FileUtils.bundleToFile(GamesInProgress.depthFile(i, depth), gamedata);
-							FileUtils.deleteFile(name + depth + ".dat");
-							depth++;
-						}
-					} catch (Exception e){
-					}
-				}
-			}
-		}
-		
-		//remove changed badges
-		if (previousVersion <= ShatteredPixelDungeon.v0_6_0b){
-			Badges.disown(Badges.Badge.ALL_WANDS_IDENTIFIED);
-			Badges.disown(Badges.Badge.ALL_RINGS_IDENTIFIED);
-			Badges.disown(Badges.Badge.ALL_SCROLLS_IDENTIFIED);
-			Badges.disown(Badges.Badge.ALL_POTIONS_IDENTIFIED);
-			Badges.disown(Badges.Badge.ALL_ITEMS_IDENTIFIED);
-			Badges.saveGlobal();
 		}
 		
 		SPDSettings.version(ShatteredPixelDungeon.versionCode);
@@ -237,26 +199,5 @@ public class WelcomeScene extends PixelScene {
 		fb.setPos( x, y );
 		add( fb );
 	}
-
-	private class DarkRedButton extends RedButton{
-		{
-			bg.brightness(0.4f);
-		}
-
-		DarkRedButton(String text){
-			super(text);
-		}
-
-		@Override
-		protected void onTouchDown() {
-			bg.brightness(0.5f);
-			Sample.INSTANCE.play( Assets.SND_CLICK );
-		}
-
-		@Override
-		protected void onTouchUp() {
-			super.onTouchUp();
-			bg.brightness(0.4f);
-		}
-	}
+	
 }

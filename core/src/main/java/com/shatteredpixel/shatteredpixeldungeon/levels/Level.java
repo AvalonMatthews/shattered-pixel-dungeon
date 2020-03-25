@@ -41,7 +41,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Shadows;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.WindParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
@@ -56,6 +58,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Door;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.HighGrass;
@@ -64,9 +67,10 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.ShadowCaster;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
-import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTiledVisual;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Game;
@@ -77,6 +81,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Point;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 import com.watabou.utils.SparseArray;
 
 import java.util.ArrayList;
@@ -134,8 +139,8 @@ public abstract class Level implements Bundlable {
 	public HashMap<Class<? extends Blob>,Blob> blobs;
 	public SparseArray<Plant> plants;
 	public SparseArray<Trap> traps;
-	public HashSet<CustomTiledVisual> customTiles;
-	public HashSet<CustomTiledVisual> customWalls;
+	public HashSet<CustomTilemap> customTiles;
+	public HashSet<CustomTilemap> customWalls;
 	
 	protected ArrayList<Item> itemsToSpawn = new ArrayList<>();
 
@@ -300,8 +305,8 @@ public abstract class Level implements Bundlable {
 
 		version = bundle.getInt( VERSION );
 		
-		//saves from before 0.6.0b are not supported
-		if (version < ShatteredPixelDungeon.v0_6_0b){
+		//saves from before 0.6.5c are not supported
+		if (version < ShatteredPixelDungeon.v0_6_5c){
 			throw new RuntimeException("old save");
 		}
 
@@ -324,11 +329,6 @@ public abstract class Level implements Bundlable {
 		exit		= bundle.getInt( EXIT );
 
 		locked      = bundle.getBoolean( LOCKED );
-
-		// pre-0.6.1 saves
-		if (version <= ShatteredPixelDungeon.v0_6_0b){
-			map = Terrain.convertTilesFrom0_6_0b( map );
-		}
 		
 		Collection<Bundlable> collection = bundle.getCollection( HEAPS );
 		for (Bundlable h : collection) {
@@ -351,13 +351,13 @@ public abstract class Level implements Bundlable {
 
 		collection = bundle.getCollection( CUSTOM_TILES );
 		for (Bundlable p : collection) {
-			CustomTiledVisual vis = (CustomTiledVisual)p;
+			CustomTilemap vis = (CustomTilemap)p;
 			customTiles.add(vis);
 		}
 
 		collection = bundle.getCollection( CUSTOM_WALLS );
 		for (Bundlable p : collection) {
-			CustomTiledVisual vis = (CustomTiledVisual)p;
+			CustomTilemap vis = (CustomTilemap)p;
 			customWalls.add(vis);
 		}
 		
@@ -379,6 +379,12 @@ public abstract class Level implements Bundlable {
 		if (feeling == Feeling.DARK)
 			viewDistance = Math.round(viewDistance/2f);
 
+		if (bundle.contains( "mobs_to_spawn" )) {
+			for (Class<? extends Mob> mob : bundle.getClassArray("mobs_to_spawn")) {
+				if (mob != null) mobsToSpawn.add(mob);
+			}
+		}
+		
 		buildFlagMaps();
 		cleanWalls();
 	}
@@ -394,14 +400,15 @@ public abstract class Level implements Bundlable {
 		bundle.put( ENTRANCE, entrance );
 		bundle.put( EXIT, exit );
 		bundle.put( LOCKED, locked );
-		bundle.put( HEAPS, heaps.values() );
-		bundle.put( PLANTS, plants.values() );
-		bundle.put( TRAPS, traps.values() );
+		bundle.put( HEAPS, heaps.valueList() );
+		bundle.put( PLANTS, plants.valueList() );
+		bundle.put( TRAPS, traps.valueList() );
 		bundle.put( CUSTOM_TILES, customTiles );
 		bundle.put( CUSTOM_WALLS, customWalls );
 		bundle.put( MOBS, mobs );
 		bundle.put( BLOBS, blobs.values() );
 		bundle.put( FEELING, feeling );
+		bundle.put( "mobs_to_spawn", mobsToSpawn.toArray(new Class[0]));
 	}
 	
 	public int tunnelTile() {
@@ -430,7 +437,15 @@ public abstract class Level implements Bundlable {
 	
 	abstract protected boolean build();
 	
-	abstract public Mob createMob();
+	private ArrayList<Class<?extends Mob>> mobsToSpawn = new ArrayList<>();
+	
+	public Mob createMob() {
+		if (mobsToSpawn == null || mobsToSpawn.isEmpty()) {
+			mobsToSpawn = Bestiary.getMobRotation(Dungeon.depth);
+		}
+		
+		return Reflection.newInstance(mobsToSpawn.remove(0));
+	}
 
 	abstract protected void createMobs();
 
@@ -454,6 +469,7 @@ public abstract class Level implements Bundlable {
 			visuals = new Group();
 		} else {
 			visuals.clear();
+			visuals.camera = null;
 		}
 		for (int i=0; i < length(); i++) {
 			if (pit[i]) {
@@ -694,7 +710,7 @@ public abstract class Level implements Bundlable {
 		}
 		
 		if (Dungeon.level != null) {
-			press( cell, null, true );
+			pressCell( cell );
 		}
 		
 		return heap;
@@ -767,25 +783,36 @@ public abstract class Level implements Bundlable {
 		return result;
 	}
 	
-	//characters which are not the hero 'soft' press cells by default
-	public void press( int cell, Char ch){
-		press( cell, ch, ch == Dungeon.hero);
+	public void occupyCell( Char ch ){
+		if (!ch.flying){
+			
+			if (pit[ch.pos]){
+				if (ch == Dungeon.hero) {
+					Chasm.heroFall(ch.pos);
+				} else if (ch instanceof Mob) {
+					Chasm.mobFall( (Mob)ch );
+				}
+				return;
+			}
+			
+			//characters which are not the hero or a sheep 'soft' press cells
+			pressCell( ch.pos, ch instanceof Hero || ch instanceof Sheep);
+		} else {
+			if (map[ch.pos] == Terrain.DOOR){
+				Door.enter( ch.pos );
+			}
+		}
+	}
+	
+	//public method for forcing the hard press of a cell. e.g. when an item lands on it
+	public void pressCell( int cell ){
+		pressCell( cell, true );
 	}
 	
 	//a 'soft' press ignores hidden traps
 	//a 'hard' press triggers all things
-	//generally a 'hard' press should be forced is something is moving forcefully (e.g. thrown)
-	public void press( int cell, Char ch, boolean hard ) {
+	private void pressCell( int cell, boolean hard ) {
 
-		if (ch != null && pit[cell] && !ch.flying) {
-			if (ch == Dungeon.hero) {
-				Chasm.heroFall(cell);
-			} else if (ch instanceof Mob) {
-				Chasm.mobFall( (Mob)ch );
-			}
-			return;
-		}
-		
 		Trap trap = null;
 		
 		switch (map[cell]) {
@@ -803,7 +830,7 @@ public abstract class Level implements Bundlable {
 			
 		case Terrain.HIGH_GRASS:
 		case Terrain.FURROWED_GRASS:
-			HighGrass.trample( this, cell, ch );
+			HighGrass.trample( this, cell);
 			break;
 			
 		case Terrain.WELL:
@@ -820,21 +847,32 @@ public abstract class Level implements Bundlable {
 			TimekeepersHourglass.timeFreeze timeFreeze =
 					Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class);
 			
-			if (timeFreeze == null) {
+			Swiftthistle.TimeBubble bubble =
+					Dungeon.hero.buff(Swiftthistle.TimeBubble.class);
+			
+			if (bubble != null){
+				
+				Sample.INSTANCE.play(Assets.SND_TRAP);
+				
+				discover(cell);
+				
+				bubble.setDelayedPress(cell);
+				
+			} else if (timeFreeze != null){
+				
+				Sample.INSTANCE.play(Assets.SND_TRAP);
+				
+				discover(cell);
+				
+				timeFreeze.setDelayedPress(cell);
+				
+			} else {
 
-				if (ch == Dungeon.hero) {
+				if (Dungeon.hero.pos == cell) {
 					Dungeon.hero.interrupt();
 				}
 
 				trap.trigger();
-
-			} else {
-
-				Sample.INSTANCE.play(Assets.SND_TRAP);
-
-				discover(cell);
-
-				timeFreeze.setDelayedPress(cell);
 
 			}
 		}
@@ -943,16 +981,32 @@ public abstract class Level implements Bundlable {
 			}
 			
 			if (c.buff( Awareness.class ) != null) {
-				for (Heap heap : heaps.values()) {
+				for (Heap heap : heaps.valueList()) {
 					int p = heap.pos;
 					for (int i : PathFinder.NEIGHBOURS9)
 						fieldOfView[p+i] = true;
 				}
 			}
+
+			for (Mob ward : mobs){
+				if (ward instanceof WandOfWarding.Ward){
+					if (ward.fieldOfView == null || ward.fieldOfView.length != length()){
+						ward.fieldOfView = new boolean[length()];
+						Dungeon.level.updateFieldOfView( ward, ward.fieldOfView );
+					}
+					for (Mob m : mobs){
+						if (ward.fieldOfView[m.pos] && !fieldOfView[m.pos] &&
+								!Dungeon.hero.mindVisionEnemies.contains(m)){
+							Dungeon.hero.mindVisionEnemies.add(m);
+						}
+					}
+					BArray.or(fieldOfView, ward.fieldOfView, fieldOfView);
+				}
+			}
 		}
 
 		if (c == Dungeon.hero) {
-			for (Heap heap : heaps.values())
+			for (Heap heap : heaps.valueList())
 				if (!heap.seen && fieldOfView[heap.pos])
 					heap.seen = true;
 		}

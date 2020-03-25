@@ -35,13 +35,13 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BadgesList;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemSlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
-import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
 
@@ -52,7 +52,7 @@ public class WndRanking extends WndTabbed {
 	private static final int WIDTH			= 115;
 	private static final int HEIGHT			= 144;
 	
-	private Thread thread;
+	private static Thread thread;
 	private String error = null;
 	
 	private Image busy;
@@ -61,6 +61,11 @@ public class WndRanking extends WndTabbed {
 		
 		super();
 		resize( WIDTH, HEIGHT );
+		
+		if (thread != null){
+			hide();
+			return;
+		}
 		
 		thread = new Thread() {
 			@Override
@@ -73,7 +78,6 @@ public class WndRanking extends WndTabbed {
 				}
 			}
 		};
-		thread.start();
 
 		busy = Icons.BUSY.get();
 		busy.origin.set( busy.width / 2, busy.height / 2 );
@@ -81,16 +85,18 @@ public class WndRanking extends WndTabbed {
 		busy.x = (WIDTH - busy.width) / 2;
 		busy.y = (HEIGHT - busy.height) / 2;
 		add( busy );
+		
+		thread.start();
 	}
 	
 	@Override
 	public void update() {
 		super.update();
 		
-		if (thread != null && !thread.isAlive()) {
-			thread = null;
+		if (thread != null && !thread.isAlive() && busy != null) {
 			if (error == null) {
 				remove( busy );
+				busy = null;
 				if (Dungeon.hero != null) {
 					createControls();
 				} else {
@@ -101,6 +107,12 @@ public class WndRanking extends WndTabbed {
 				Game.scene().add( new WndError( error ) );
 			}
 		}
+	}
+	
+	@Override
+	public void destroy() {
+		super.destroy();
+		thread = null;
 	}
 	
 	private void createControls() {
@@ -143,7 +155,7 @@ public class WndRanking extends WndTabbed {
 	
 	private class StatsTab extends Group {
 
-		private int GAP	= 4;
+		private int GAP	= 5;
 		
 		public StatsTab() {
 			super();
@@ -159,7 +171,7 @@ public class WndRanking extends WndTabbed {
 			title.setRect( 0, 0, WIDTH, 0 );
 			add( title );
 			
-			float pos = title.bottom();
+			float pos = title.bottom() + GAP;
 
 			if (Dungeon.challenges > 0) {
 				RedButton btnChallenges = new RedButton( Messages.get(this, "challenges") ) {
@@ -175,9 +187,9 @@ public class WndRanking extends WndTabbed {
 				pos = btnChallenges.bottom();
 			}
 
-			pos += GAP + GAP;
+			pos += GAP;
 			
-			pos = statSlot( this, Messages.get(this, "str"), Integer.toString( Dungeon.hero.STR ), pos );
+			pos = statSlot( this, Messages.get(this, "str"), Integer.toString( Dungeon.hero.STR() ), pos );
 			pos = statSlot( this, Messages.get(this, "health"), Integer.toString( Dungeon.hero.HT ), pos );
 			
 			pos += GAP;
@@ -199,17 +211,16 @@ public class WndRanking extends WndTabbed {
 		
 		private float statSlot( Group parent, String label, String value, float pos ) {
 			
-			RenderedText txt = PixelScene.renderText( label, 7 );
-			txt.y = pos;
+			RenderedTextBlock txt = PixelScene.renderTextBlock( label, 7 );
+			txt.setPos(0, pos);
 			parent.add( txt );
 			
-			txt = PixelScene.renderText( value, 7 );
-			txt.x = WIDTH * 0.65f;
-			txt.y = pos;
+			txt = PixelScene.renderTextBlock( value, 7 );
+			txt.setPos(WIDTH * 0.7f, pos);
 			PixelScene.align(txt);
 			parent.add( txt );
 			
-			return pos + GAP + txt.baseLine();
+			return pos + GAP + txt.height();
 		}
 	}
 	
@@ -284,7 +295,7 @@ public class WndRanking extends WndTabbed {
 		
 		private ItemSlot slot;
 		private ColorBlock bg;
-		private RenderedText name;
+		private RenderedTextBlock name;
 		
 		public ItemButton( Item item ) {
 			
@@ -311,7 +322,7 @@ public class WndRanking extends WndTabbed {
 			slot = new ItemSlot();
 			add( slot );
 			
-			name = PixelScene.renderText( "?", 7 );
+			name = PixelScene.renderTextBlock( 7 );
 			add( name );
 			
 			super.createChildren();
@@ -325,31 +336,26 @@ public class WndRanking extends WndTabbed {
 			slot.setRect( x, y, HEIGHT, HEIGHT );
 			PixelScene.align(slot);
 			
-			name.x = slot.right() + 2;
-			name.y = y + (height - name.baseLine()) / 2;
+			name.maxWidth((int)(width - slot.width() - 2));
+			name.text(Messages.titleCase(item.name()));
+			name.setPos(
+					slot.right()+2,
+					y + (height - name.height()) / 2
+			);
 			PixelScene.align(name);
-			
-			String str = Messages.titleCase( item.name() );
-			name.text( str );
-			if (name.width() > width - name.x) {
-				do {
-					str = str.substring( 0, str.length() - 1 );
-					name.text( str + "..." );
-				} while (name.width() > width - name.x);
-			}
 			
 			super.layout();
 		}
 		
 		@Override
-		protected void onTouchDown() {
+		protected void onPointerDown() {
 			bg.brightness( 1.5f );
 			Sample.INSTANCE.play( Assets.SND_CLICK, 0.7f, 0.7f, 1.2f );
-		};
+		}
 		
-		protected void onTouchUp() {
+		protected void onPointerUp() {
 			bg.brightness( 1.0f );
-		};
+		}
 		
 		@Override
 		protected void onClick() {
@@ -386,14 +392,14 @@ public class WndRanking extends WndTabbed {
 		}
 
 		@Override
-		protected void onTouchDown() {
+		protected void onPointerDown() {
 			bg.brightness( 1.5f );
 			Sample.INSTANCE.play( Assets.SND_CLICK, 0.7f, 0.7f, 1.2f );
-		};
+		}
 
-		protected void onTouchUp() {
+		protected void onPointerUp() {
 			bg.brightness( 1.0f );
-		};
+		}
 
 		@Override
 		protected void onClick() {

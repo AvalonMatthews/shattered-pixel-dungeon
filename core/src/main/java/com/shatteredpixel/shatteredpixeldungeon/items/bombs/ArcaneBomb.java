@@ -34,6 +34,8 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
+
 public class ArcaneBomb extends Bomb {
 	
 	{
@@ -61,6 +63,8 @@ public class ArcaneBomb extends Bomb {
 	public void explode(int cell) {
 		super.explode(cell);
 		
+		ArrayList<Char> affected = new ArrayList<>();
+		
 		PathFinder.buildDistanceMap( cell, BArray.not( Dungeon.level.solid, null ), 2 );
 		for (int i = 0; i < PathFinder.distance.length; i++) {
 			if (PathFinder.distance[i] < Integer.MAX_VALUE) {
@@ -69,12 +73,18 @@ public class ArcaneBomb extends Bomb {
 				}
 				Char ch = Actor.findChar(i);
 				if (ch != null){
-					//regular bomb damage, but pierces armor
-					int damage = Math.round(Random.NormalIntRange( Dungeon.depth+5, 10 + Dungeon.depth * 2 ));
-					ch.damage(damage, this);
-					if (ch == Dungeon.hero && !ch.isAlive())
-						Dungeon.fail(Bomb.class);
+					affected.add(ch);
 				}
+			}
+		}
+		
+		for (Char ch : affected){
+			// 100%/83%/67% bomb damage based on distance, but pierces armor.
+			int damage = Math.round(Random.NormalIntRange( Dungeon.depth+5, 10 + Dungeon.depth * 2 ));
+			float multiplier = 1f - (.16667f*Dungeon.level.distance(cell, ch.pos));
+			ch.damage(Math.round(damage*multiplier), this);
+			if (ch == Dungeon.hero && !ch.isAlive()){
+				Dungeon.fail(Bomb.class);
 			}
 		}
 	}
