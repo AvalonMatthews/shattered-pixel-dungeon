@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2019 Evan Debenham
+ * Copyright (C) 2014-2021 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SmokeScreen;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Web;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WellWater;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Awareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -42,7 +43,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bestiary;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.WindParticle;
@@ -51,13 +54,14 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Door;
@@ -125,6 +129,8 @@ public abstract class Level implements Bundlable {
 	public boolean[] avoid;
 	public boolean[] water;
 	public boolean[] pit;
+
+	public boolean[] openSpace;
 	
 	public Feeling feeling = Feeling.NONE;
 	
@@ -169,9 +175,9 @@ public abstract class Level implements Bundlable {
 
 	public void create() {
 
-		Random.seed( Dungeon.seedCurDepth() );
+		Random.pushGenerator( Dungeon.seedCurDepth() );
 		
-		if (!(Dungeon.bossLevel() || Dungeon.depth == 21) /*final shop floor*/) {
+		if (!(Dungeon.bossLevel())) {
 
 			if (Dungeon.isChallenged(Challenges.NO_FOOD)){
 				addItemToSpawn( new SmallRation() );
@@ -204,20 +210,6 @@ public abstract class Level implements Bundlable {
 			
 			if ( Dungeon.depth == ((Dungeon.seed % 3) + 1)){
 				addItemToSpawn( new StoneOfIntuition() );
-			}
-
-			DriedRose rose = Dungeon.hero.belongings.getItem( DriedRose.class );
-			if (rose != null && rose.isIdentified() && !rose.cursed){
-				//aim to drop 1 petal every 2 floors
-				int petalsNeeded = (int) Math.ceil((float)((Dungeon.depth / 2) - rose.droppedPetals) / 3);
-
-				for (int i=1; i <= petalsNeeded; i++) {
-					//the player may miss a single petal and still max their rose.
-					if (rose.droppedPetals < 11) {
-						addItemToSpawn(new DriedRose.Petal());
-						rose.droppedPetals++;
-					}
-				}
 			}
 			
 			if (Dungeon.depth > 1) {
@@ -261,7 +253,7 @@ public abstract class Level implements Bundlable {
 		createMobs();
 		createItems();
 
-		Random.seed();
+		Random.popGenerator();
 	}
 	
 	public void setSize(int w, int h){
@@ -286,6 +278,8 @@ public abstract class Level implements Bundlable {
 		avoid		= new boolean[length];
 		water		= new boolean[length];
 		pit			= new boolean[length];
+
+		openSpace   = new boolean[length];
 		
 		PathFinder.setMapSize(w, h);
 	}
@@ -305,8 +299,8 @@ public abstract class Level implements Bundlable {
 
 		version = bundle.getInt( VERSION );
 		
-		//saves from before 0.6.5c are not supported
-		if (version < ShatteredPixelDungeon.v0_6_5c){
+		//saves from before v0.7.3b are not supported
+		if (version < ShatteredPixelDungeon.v0_7_3b){
 			throw new RuntimeException("old save");
 		}
 
@@ -384,9 +378,21 @@ public abstract class Level implements Bundlable {
 				if (mob != null) mobsToSpawn.add(mob);
 			}
 		}
-		
+
+		if (bundle.contains( "respawner" )){
+			respawner = (Respawner) bundle.get("respawner");
+		}
+
 		buildFlagMaps();
 		cleanWalls();
+
+		//compat with pre-0.8.0 saves
+		for (Heap h : heaps.valueList()){
+			if (h.type == Heap.Type.MIMIC){
+				heaps.remove(h.pos);
+				mobs.add(Mimic.spawnAt(h.pos, h.items));
+			}
+		}
 	}
 	
 	@Override
@@ -409,6 +415,7 @@ public abstract class Level implements Bundlable {
 		bundle.put( BLOBS, blobs.values() );
 		bundle.put( FEELING, feeling );
 		bundle.put( "mobs_to_spawn", mobsToSpawn.toArray(new Class[0]));
+		bundle.put( "respawner", respawner );
 	}
 	
 	public int tunnelTile() {
@@ -461,6 +468,9 @@ public abstract class Level implements Bundlable {
 	public void unseal(){
 		if (locked) {
 			locked = false;
+			if (Dungeon.hero.buff(LockedFloor.class) != null){
+				Dungeon.hero.buff(LockedFloor.class).detach();
+			}
 		}
 	}
 
@@ -494,40 +504,60 @@ public abstract class Level implements Bundlable {
 		}
 		return null;
 	}
-	
-	public Actor respawner() {
-		return new Actor() {
 
-			{
-				actPriority = BUFF_PRIO; //as if it were a buff.
-			}
+	private Respawner respawner;
 
-			@Override
-			protected boolean act() {
-				int count = 0;
-				for (Mob mob : mobs.toArray(new Mob[0])){
-					if (mob.alignment == Char.Alignment.ENEMY) count++;
-				}
-				
-				if (count < nMobs()) {
-
-					Mob mob = createMob();
-					mob.state = mob.WANDERING;
-					mob.pos = randomRespawnCell();
-					if (Dungeon.hero.isAlive() && mob.pos != -1 && distance(Dungeon.hero.pos, mob.pos) >= 4) {
-						GameScene.add( mob );
-						if (Statistics.amuletObtained) {
-							mob.beckon( Dungeon.hero.pos );
-						}
-					}
-				}
-				spend(respawnTime());
-				return true;
-			}
-		};
+	public Actor addRespawner() {
+		if (respawner == null){
+			respawner = new Respawner();
+			Actor.addDelayed(respawner, respawnCooldown());
+		} else {
+			Actor.add(respawner);
+		}
+		return respawner;
 	}
-	
-	public float respawnTime(){
+
+	public static class Respawner extends Actor {
+		{
+			actPriority = BUFF_PRIO; //as if it were a buff.
+		}
+
+		@Override
+		protected boolean act() {
+			float count = 0;
+
+			for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
+				if (mob.alignment == Char.Alignment.ENEMY && !mob.properties().contains(Char.Property.MINIBOSS)) {
+					count += mob.spawningWeight();
+				}
+			}
+
+			if (count < Dungeon.level.nMobs()) {
+
+				PathFinder.buildDistanceMap(Dungeon.hero.pos, BArray.or(Dungeon.level.passable, Dungeon.level.avoid, null));
+
+				Mob mob = Dungeon.level.createMob();
+				mob.state = mob.WANDERING;
+				mob.pos = Dungeon.level.randomRespawnCell( mob );
+				if (Dungeon.hero.isAlive() && mob.pos != -1 && PathFinder.distance[mob.pos] >= 12) {
+					GameScene.add( mob );
+					if (Statistics.amuletObtained) {
+						mob.beckon( Dungeon.hero.pos );
+					}
+					spend(Dungeon.level.respawnCooldown());
+				} else {
+					//try again in 1 turn
+					spend(TICK);
+				}
+			} else {
+				spend(Dungeon.level.respawnCooldown());
+			}
+
+			return true;
+		}
+	}
+
+	public float respawnCooldown(){
 		if (Statistics.amuletObtained){
 			return TIME_TO_RESPAWN/2f;
 		} else if (Dungeon.level.feeling == Feeling.DARK){
@@ -537,21 +567,23 @@ public abstract class Level implements Bundlable {
 		}
 	}
 	
-	public int randomRespawnCell() {
+	public int randomRespawnCell( Char ch ) {
 		int cell;
 		do {
 			cell = Random.Int( length() );
 		} while ((Dungeon.level == this && heroFOV[cell])
 				|| !passable[cell]
+				|| (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell])
 				|| Actor.findChar( cell ) != null);
 		return cell;
 	}
 	
-	public int randomDestination() {
+	public int randomDestination( Char ch ) {
 		int cell;
 		do {
 			cell = Random.Int( length() );
-		} while (!passable[cell]);
+		} while (!passable[cell]
+				|| (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell]));
 		return cell;
 	}
 	
@@ -600,31 +632,59 @@ public abstract class Level implements Bundlable {
 		SmokeScreen s = (SmokeScreen)blobs.get(SmokeScreen.class);
 		if (s != null && s.volume > 0){
 			for (int i=0; i < length(); i++) {
-				losBlocking[i]	= losBlocking[i] || s.cur[i] > 0;
+				losBlocking[i] = losBlocking[i] || s.cur[i] > 0;
+			}
+		}
+
+		Web w = (Web) blobs.get(Web.class);
+		if (w != null && w.volume > 0){
+			for (int i=0; i < length(); i++) {
+				solid[i] = solid[i] || w.cur[i] > 0;
 			}
 		}
 		
 		int lastRow = length() - width();
 		for (int i=0; i < width(); i++) {
 			passable[i] = avoid[i] = false;
-			losBlocking[i] = true;
+			losBlocking[i] = solid[i] = true;
 			passable[lastRow + i] = avoid[lastRow + i] = false;
-			losBlocking[lastRow + i] = true;
+			losBlocking[lastRow + i] = solid[lastRow + i] = true;
 		}
 		for (int i=width(); i < lastRow; i += width()) {
 			passable[i] = avoid[i] = false;
-			losBlocking[i] = true;
+			losBlocking[i] = solid[i] = true;
 			passable[i + width()-1] = avoid[i + width()-1] = false;
-			losBlocking[i + width()-1] = true;
+			losBlocking[i + width()-1] = solid[i + width()-1] = true;
 		}
+
+		//an open space is large enough to fit large mobs. A space is open when it is not solid
+		// and there is and open corner with both adjacent cells opens
+		for (int i=0; i < length(); i++) {
+			if (solid[i]){
+				openSpace[i] = false;
+			} else {
+				for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2){
+					if (solid[i+PathFinder.CIRCLE8[j]]) {
+						openSpace[i] = false;
+					} else if (!solid[i+PathFinder.CIRCLE8[(j+1)%8]]
+							&& !solid[i+PathFinder.CIRCLE8[(j+2)%8]]){
+						openSpace[i] = true;
+						break;
+					}
+				}
+			}
+		}
+
 	}
 
 	public void destroy( int pos ) {
 		set( pos, Terrain.EMBERS );
 	}
 
-	protected void cleanWalls() {
-		discoverable = new boolean[length()];
+	public void cleanWalls() {
+		if (discoverable == null || discoverable.length != length) {
+			discoverable = new boolean[length()];
+		}
 
 		for (int i=0; i < length(); i++) {
 			
@@ -662,10 +722,27 @@ public abstract class Level implements Bundlable {
 		level.avoid[cell]			= (flags & Terrain.AVOID) != 0;
 		level.pit[cell]			    = (flags & Terrain.PIT) != 0;
 		level.water[cell]			= terrain == Terrain.WATER;
-		
+
 		SmokeScreen s = (SmokeScreen)level.blobs.get(SmokeScreen.class);
 		if (s != null && s.volume > 0){
 			level.losBlocking[cell] = level.losBlocking[cell] || s.cur[cell] > 0;
+		}
+
+		for (int i : PathFinder.NEIGHBOURS9){
+			i = cell + i;
+			if (level.solid[i]){
+				level.openSpace[i] = false;
+			} else {
+				for (int j = 1; j < PathFinder.CIRCLE8.length; j += 2){
+					if (level.solid[i+PathFinder.CIRCLE8[j]]) {
+						level.openSpace[i] = false;
+					} else if (!level.solid[i+PathFinder.CIRCLE8[(j+1)%8]]
+							&& !level.solid[i+PathFinder.CIRCLE8[(j+2)%8]]){
+						level.openSpace[i] = true;
+						break;
+					}
+				}
+			}
 		}
 	}
 	
@@ -709,7 +786,7 @@ public abstract class Level implements Bundlable {
 			heap.drop(item);
 		}
 		
-		if (Dungeon.level != null) {
+		if (Dungeon.level != null && ShatteredPixelDungeon.scene() instanceof GameScene) {
 			pressCell( cell );
 		}
 		
@@ -740,6 +817,15 @@ public abstract class Level implements Bundlable {
 		plants.put( pos, plant );
 		
 		GameScene.plantSeed( pos );
+
+		for (Char ch : Actor.chars()){
+			if (ch instanceof WandOfRegrowth.Lotus
+					&& ((WandOfRegrowth.Lotus) ch).inRange(pos)
+					&& Actor.findChar(pos) != null){
+				plant.trigger();
+				return null;
+			}
+		}
 		
 		return plant;
 	}
@@ -772,18 +858,57 @@ public abstract class Level implements Bundlable {
 			trap.reveal();
 		GameScene.updateMap( cell );
 	}
+
+	public boolean setCellToWater( boolean includeTraps, int cell ){
+		Point p = cellToPoint(cell);
+
+		//if a custom tilemap is over that cell, don't put water there
+		for (CustomTilemap cust : customTiles){
+			Point custPoint = new Point(p);
+			custPoint.x -= cust.tileX;
+			custPoint.y -= cust.tileY;
+			if (custPoint.x >= 0 && custPoint.y >= 0
+					&& custPoint.x < cust.tileW && custPoint.y < cust.tileH){
+				if (cust.image(custPoint.x, custPoint.y) != null){
+					return false;
+				}
+			}
+		}
+
+		int terr = map[cell];
+		if (terr == Terrain.EMPTY || terr == Terrain.GRASS ||
+				terr == Terrain.EMBERS || terr == Terrain.EMPTY_SP ||
+				terr == Terrain.HIGH_GRASS || terr == Terrain.FURROWED_GRASS
+				|| terr == Terrain.EMPTY_DECO){
+			set(cell, Terrain.WATER);
+			GameScene.updateMap(cell);
+			return true;
+		} else if (includeTraps && (terr == Terrain.SECRET_TRAP ||
+				terr == Terrain.TRAP || terr == Terrain.INACTIVE_TRAP)){
+			set(cell, Terrain.WATER);
+			Dungeon.level.traps.remove(cell);
+			GameScene.updateMap(cell);
+			return true;
+		}
+
+		return false;
+	}
 	
 	public int fallCell( boolean fallIntoPit ) {
 		int result;
 		do {
-			result = randomRespawnCell();
+			result = randomRespawnCell( null );
 		} while (traps.get(result) != null
-				|| findMob(result) != null
-				|| heaps.get(result) != null);
+				|| findMob(result) != null);
 		return result;
 	}
 	
 	public void occupyCell( Char ch ){
+		if (!ch.isImmune(Web.class) && Blob.volumeAt(ch.pos, Web.class) > 0){
+			blobs.get(Web.class).clear(ch.pos);
+			Web.affectChar( ch );
+		}
+
 		if (!ch.flying){
 			
 			if (pit[ch.pos]){
@@ -852,7 +977,7 @@ public abstract class Level implements Bundlable {
 			
 			if (bubble != null){
 				
-				Sample.INSTANCE.play(Assets.SND_TRAP);
+				Sample.INSTANCE.play(Assets.Sounds.TRAP);
 				
 				discover(cell);
 				
@@ -860,7 +985,7 @@ public abstract class Level implements Bundlable {
 				
 			} else if (timeFreeze != null){
 				
-				Sample.INSTANCE.play(Assets.SND_TRAP);
+				Sample.INSTANCE.play(Assets.Sounds.TRAP);
 				
 				discover(cell);
 				
@@ -881,6 +1006,10 @@ public abstract class Level implements Bundlable {
 		if (plant != null) {
 			plant.trigger();
 		}
+
+		if (hard && Blob.volumeAt(cell, Web.class) > 0){
+			blobs.get(Web.class).clear(cell);
+		}
 	}
 	
 	public void updateFieldOfView( Char c, boolean[] fieldOfView ) {
@@ -893,7 +1022,8 @@ public abstract class Level implements Bundlable {
 		if (sighted) {
 			boolean[] blocking;
 			
-			if (c instanceof Hero && ((Hero) c).subClass == HeroSubClass.WARDEN) {
+			if ((c instanceof Hero && ((Hero) c).subClass == HeroSubClass.WARDEN)
+				|| c instanceof YogFist.SoiledFist) {
 				blocking = Dungeon.level.losBlocking.clone();
 				for (int i = 0; i < blocking.length; i++){
 					if (blocking[i] && (Dungeon.level.map[i] == Terrain.HIGH_GRASS || Dungeon.level.map[i] == Terrain.FURROWED_GRASS)){
@@ -988,19 +1118,37 @@ public abstract class Level implements Bundlable {
 				}
 			}
 
-			for (Mob ward : mobs){
-				if (ward instanceof WandOfWarding.Ward){
-					if (ward.fieldOfView == null || ward.fieldOfView.length != length()){
-						ward.fieldOfView = new boolean[length()];
-						Dungeon.level.updateFieldOfView( ward, ward.fieldOfView );
+			for (TalismanOfForesight.CharAwareness a : c.buffs(TalismanOfForesight.CharAwareness.class)){
+				if (Dungeon.depth != a.depth) continue;
+				Char ch = (Char) Actor.findById(a.charID);
+				if (ch == null) {
+					a.detach();
+					continue;
+				}
+				int p = ch.pos;
+				for (int i : PathFinder.NEIGHBOURS9)
+					fieldOfView[p+i] = true;
+			}
+
+			for (TalismanOfForesight.HeapAwareness h : c.buffs(TalismanOfForesight.HeapAwareness.class)){
+				if (Dungeon.depth != h.depth) continue;
+				for (int i : PathFinder.NEIGHBOURS9)
+					fieldOfView[h.pos+i] = true;
+			}
+
+			for (Mob m : mobs){
+				if (m instanceof WandOfWarding.Ward || m instanceof WandOfRegrowth.Lotus){
+					if (m.fieldOfView == null || m.fieldOfView.length != length()){
+						m.fieldOfView = new boolean[length()];
+						Dungeon.level.updateFieldOfView( m, m.fieldOfView );
 					}
-					for (Mob m : mobs){
-						if (ward.fieldOfView[m.pos] && !fieldOfView[m.pos] &&
-								!Dungeon.hero.mindVisionEnemies.contains(m)){
-							Dungeon.hero.mindVisionEnemies.add(m);
+					for (Mob m1 : mobs){
+						if (m.fieldOfView[m1.pos] && !fieldOfView[m1.pos] &&
+								!Dungeon.hero.mindVisionEnemies.contains(m1)){
+							Dungeon.hero.mindVisionEnemies.add(m1);
 						}
 					}
-					BArray.or(fieldOfView, ward.fieldOfView, fieldOfView);
+					BArray.or(fieldOfView, m.fieldOfView, fieldOfView);
 				}
 			}
 		}
