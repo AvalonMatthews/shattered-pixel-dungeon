@@ -38,6 +38,7 @@ import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Gizmo;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.PointerArea;
 import com.watabou.noosa.ui.Button;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Point;
@@ -269,7 +270,7 @@ public class Toolbar extends Component {
 		if (lastEnabled != (Dungeon.hero.ready && Dungeon.hero.isAlive())) {
 			lastEnabled = (Dungeon.hero.ready && Dungeon.hero.isAlive());
 			
-			for (Gizmo tool : members) {
+			for (Gizmo tool : members.toArray(new Gizmo[0])) {
 				if (tool instanceof Tool) {
 					((Tool)tool).enable( lastEnabled );
 				}
@@ -309,7 +310,7 @@ public class Toolbar extends Component {
 		public Tool( int x, int y, int width, int height ) {
 			super();
 
-			hotArea.blockWhenInactive = true;
+			hotArea.blockLevel = PointerArea.ALWAYS_BLOCK;
 			frame(x, y, width, height);
 		}
 

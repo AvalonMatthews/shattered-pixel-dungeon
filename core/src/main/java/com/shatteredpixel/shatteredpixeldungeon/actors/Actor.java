@@ -104,7 +104,12 @@ public abstract class Actor implements Bundlable {
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		time = bundle.getFloat( TIME );
-		id = bundle.getInt( ID );
+		int incomingID = bundle.getInt( ID );
+		if (Actor.findById(id) == null){
+			id = incomingID;
+		} else {
+			id = nextID++;
+		}
 	}
 
 	private static int nextID = 1;
@@ -118,6 +123,7 @@ public abstract class Actor implements Bundlable {
 
 	// **********************
 	// *** Static members ***
+	// **********************
 	
 	private static HashSet<Actor> all = new HashSet<>();
 	private static HashSet<Char> chars = new HashSet<>();
@@ -203,6 +209,10 @@ public abstract class Actor implements Bundlable {
 	public static boolean processing(){
 		return current != null;
 	}
+
+	public static int curActorPriority() {
+		return current != null ? current.actPriority : DEFAULT;
+	}
 	
 	public static boolean keepActorThreadAlive = true;
 	
@@ -215,14 +225,14 @@ public abstract class Actor implements Bundlable {
 			
 			current = null;
 			if (!interrupted) {
-				now = Float.MAX_VALUE;
-				
+				float earliest = Float.MAX_VALUE;
+
 				for (Actor actor : all) {
 					
 					//some actors will always go before others if time is equal.
-					if (actor.time < now ||
-							actor.time == now && (current == null || actor.actPriority > current.actPriority)) {
-						now = actor.time;
+					if (actor.time < earliest ||
+							actor.time == earliest && (current == null || actor.actPriority > current.actPriority)) {
+						earliest = actor.time;
 						current = actor;
 					}
 					
@@ -231,6 +241,7 @@ public abstract class Actor implements Bundlable {
 
 			if  (current != null) {
 
+				now = current.time;
 				Actor acting = current;
 
 				if (acting instanceof Char && ((Char) acting).sprite != null) {
@@ -313,8 +324,7 @@ public abstract class Actor implements Bundlable {
 			Char ch = (Char)actor;
 			chars.add( ch );
 			for (Buff buff : ch.buffs()) {
-				all.add( buff );
-				buff.onAdd();
+				add(buff);
 			}
 		}
 	}

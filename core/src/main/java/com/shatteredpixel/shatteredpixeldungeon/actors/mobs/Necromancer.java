@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
@@ -49,8 +50,8 @@ public class Necromancer extends Mob {
 	{
 		spriteClass = NecromancerSprite.class;
 		
-		HP = HT = 35;
-		defenseSkill = 13;
+		HP = HT = 40;
+		defenseSkill = 14;
 		
 		EXP = 7;
 		maxLvl = 14;
@@ -133,7 +134,12 @@ public class Necromancer extends Mob {
 		
 		super.die(cause);
 	}
-	
+
+	@Override
+	protected boolean canAttack(Char enemy) {
+		return false;
+	}
+
 	private static final String SUMMONING = "summoning";
 	private static final String FIRST_SUMMON = "first_summon";
 	private static final String SUMMONING_POS = "summoning_pos";
@@ -215,6 +221,7 @@ public class Necromancer extends Mob {
 					for (int c : PathFinder.NEIGHBOURS8) {
 						if (Actor.findChar(summoningPos + c) == null
 								&& Dungeon.level.passable[summoningPos + c]
+								&& (Dungeon.level.openSpace[summoningPos + c] || !hasProp(Actor.findChar(summoningPos), Property.LARGE))
 								&& Dungeon.level.trueDistance(pos, summoningPos + c) > Dungeon.level.trueDistance(pos, pushPos)) {
 							pushPos = summoningPos + c;
 						}
@@ -229,6 +236,12 @@ public class Necromancer extends Mob {
 						Dungeon.level.occupyCell(ch );
 						
 					} else {
+
+						Char blocker = Actor.findChar(summoningPos);
+						if (blocker.alignment != alignment){
+							blocker.damage( Random.NormalIntRange(2, 10), this );
+						}
+
 						spend(TICK);
 						return true;
 					}
@@ -241,11 +254,14 @@ public class Necromancer extends Mob {
 				GameScene.add( mySkeleton );
 				Dungeon.level.occupyCell( mySkeleton );
 				Sample.INSTANCE.play(Assets.Sounds.BONES);
-				summoningEmitter.burst( Speck.factory( Speck.RATTLE ), 5 );
+				summoningEmitter.burst(Speck.factory(Speck.RATTLE), 5);
 				sprite.idle();
 				
 				if (buff(Corruption.class) != null){
 					Buff.affect(mySkeleton, Corruption.class);
+				}
+				for (Buff b : buffs(ChampionEnemy.class)){
+					Buff.affect( mySkeleton, b.getClass());
 				}
 				
 				spend(TICK);

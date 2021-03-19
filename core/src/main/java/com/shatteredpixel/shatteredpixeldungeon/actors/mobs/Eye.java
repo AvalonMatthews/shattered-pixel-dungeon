@@ -38,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EyeSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
 public class Eye extends Mob {
@@ -86,7 +87,7 @@ public class Eye extends Mob {
 	protected boolean canAttack( Char enemy ) {
 
 		if (beamCooldown == 0) {
-			Ballistica aim = new Ballistica(pos, enemy.pos, Ballistica.STOP_TERRAIN);
+			Ballistica aim = new Ballistica(pos, enemy.pos, Ballistica.STOP_SOLID);
 
 			if (enemy.invisible == 0 && !isCharmedBy(enemy) && fieldOfView[enemy.pos] && aim.subPath(1, aim.dist).contains(enemy.pos)){
 				beam = aim;
@@ -106,7 +107,7 @@ public class Eye extends Mob {
 			sprite.idle();
 		}
 		if (beam == null && beamTarget != -1) {
-			beam = new Ballistica(pos, beamTarget, Ballistica.STOP_TERRAIN);
+			beam = new Ballistica(pos, beamTarget, Ballistica.STOP_SOLID);
 			sprite.turnTo(pos, beamTarget);
 		}
 		if (beamCooldown > 0)
@@ -128,7 +129,7 @@ public class Eye extends Mob {
 
 			spend( attackDelay() );
 			
-			beam = new Ballistica(pos, beamTarget, Ballistica.STOP_TERRAIN);
+			beam = new Ballistica(pos, beamTarget, Ballistica.STOP_SOLID);
 			if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[beam.collisionPos] ) {
 				sprite.zap( beam.collisionPos );
 				return false;
@@ -205,12 +206,17 @@ public class Eye extends Mob {
 		Item loot;
 		switch(Random.Int(4)){
 			case 0: case 1: default:
-				loot = new Dewdrop().quantity(2);
+				loot = new Dewdrop();
+				int ofs;
+				do {
+					ofs = PathFinder.NEIGHBOURS8[Random.Int(8)];
+				} while (Dungeon.level.solid[pos + ofs] && !Dungeon.level.passable[pos + ofs]);
+				Dungeon.level.drop( new Dewdrop(), pos + ofs ).sprite.drop( pos );
 				break;
-			case 3:
+			case 2:
 				loot = Generator.random(Generator.Category.SEED);
 				break;
-			case 4:
+			case 3:
 				loot = Generator.random(Generator.Category.STONE);
 				break;
 		}

@@ -25,6 +25,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Bones;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldenMimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -33,10 +35,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.GuidePage;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.GoldenKey;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.levels.builders.Builder;
+import com.shatteredpixel.shatteredpixeldungeon.levels.builders.FigureEightBuilder;
 import com.shatteredpixel.shatteredpixeldungeon.levels.builders.LoopBuilder;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
@@ -71,8 +75,6 @@ public abstract class RegularLevel extends Level {
 	protected Room roomEntrance;
 	protected Room roomExit;
 	
-	public int secretDoors;
-	
 	@Override
 	protected boolean build() {
 		
@@ -97,8 +99,12 @@ public abstract class RegularLevel extends Level {
 		ArrayList<Room> initRooms = new ArrayList<>();
 		initRooms.add ( roomEntrance = new EntranceRoom());
 		initRooms.add( roomExit = new ExitRoom());
-		
-		int standards = standardRooms();
+
+		//force max standard rooms and multiple by 1.5x for large levels
+		int standards = standardRooms(feeling == Feeling.LARGE);
+		if (feeling == Feeling.LARGE){
+			standards = (int)Math.ceil(standards * 1.5f);
+		}
 		for (int i = 0; i < standards; i++) {
 			StandardRoom s;
 			do {
@@ -110,8 +116,12 @@ public abstract class RegularLevel extends Level {
 		
 		if (Dungeon.shopOnLevel())
 			initRooms.add(new ShopRoom());
-		
-		int specials = specialRooms();
+
+		//force max special rooms and add one more for large levels
+		int specials = specialRooms(feeling == Feeling.LARGE);
+		if (feeling == Feeling.LARGE){
+			specials++;
+		}
 		SpecialRoom.initForFloor();
 		for (int i = 0; i < specials; i++) {
 			SpecialRoom s = SpecialRoom.createRoom();
@@ -120,25 +130,36 @@ public abstract class RegularLevel extends Level {
 		}
 		
 		int secrets = SecretRoom.secretsForFloor(Dungeon.depth);
-		for (int i = 0; i < secrets; i++)
+		//one additional secret for secret levels
+		if (feeling == Feeling.SECRETS) secrets++;
+		for (int i = 0; i < secrets; i++) {
 			initRooms.add(SecretRoom.createRoom());
+		}
 		
 		return initRooms;
 	}
 	
-	protected int standardRooms(){
+	protected int standardRooms(boolean forceMax){
 		return 0;
 	}
 	
-	protected int specialRooms(){
+	protected int specialRooms(boolean forceMax){
 		return 0;
 	}
 	
 	protected Builder builder(){
-		return new LoopBuilder()
-				.setLoopShape( 2 ,
-						Random.Float(0.4f, 0.7f),
-						Random.Float(0f, 0.5f));
+		if (Random.Int(2) == 0){
+			return new LoopBuilder()
+					.setLoopShape( 2 ,
+							Random.Float(0f, 0.65f),
+							Random.Float(0f, 0.50f));
+		} else {
+			return new FigureEightBuilder()
+					.setLoopShape( 2 ,
+							Random.Float(0.3f, 0.8f),
+							0f);
+		}
+
 	}
 	
 	protected abstract Painter painter();
@@ -157,13 +178,13 @@ public abstract class RegularLevel extends Level {
 	
 	@Override
 	public int nMobs() {
-		switch(Dungeon.depth) {
-			case 1:
-				//mobs are not randomly spawned on floor 1.
-				return 0;
-			default:
-				return 3 + Dungeon.depth % 5 + Random.Int(3);
+		if (Dungeon.depth <= 1) return 0;
+
+		int mobs = 3 + Dungeon.depth % 5 + Random.Int(3);
+		if (feeling == Feeling.LARGE){
+			mobs = (int)Math.ceil(mobs * 1.33f);
 		}
+		return mobs;
 	}
 	
 	@Override
@@ -195,7 +216,7 @@ public abstract class RegularLevel extends Level {
 			do {
 				mob.pos = pointToCell(roomToSpawn.random());
 				tries--;
-			} while (tries >= 0 && (findMob(mob.pos) != null || !passable[mob.pos] || mob.pos == exit
+			} while (tries >= 0 && (findMob(mob.pos) != null || !passable[mob.pos] || solid[mob.pos] || mob.pos == exit
 					|| (!openSpace[mob.pos] && mob.properties().contains(Char.Property.LARGE))));
 
 			if (tries >= 0) {
@@ -210,7 +231,7 @@ public abstract class RegularLevel extends Level {
 					do {
 						mob.pos = pointToCell(roomToSpawn.random());
 						tries--;
-					} while (tries >= 0 && (findMob(mob.pos) != null || !passable[mob.pos] || mob.pos == exit
+					} while (tries >= 0 && (findMob(mob.pos) != null || !passable[mob.pos] || solid[mob.pos] || mob.pos == exit
 							|| (!openSpace[mob.pos] && mob.properties().contains(Char.Property.LARGE))));
 
 					if (tries >= 0) {
@@ -251,6 +272,7 @@ public abstract class RegularLevel extends Level {
 			if (!heroFOV[cell]
 					&& Actor.findChar( cell ) == null
 					&& passable[cell]
+					&& !solid[cell]
 					&& (!Char.hasProp(ch, Char.Property.LARGE) || openSpace[cell])
 					&& room.canPlaceCharacter(cellToPoint(cell), this)
 					&& cell != exit) {
@@ -290,6 +312,10 @@ public abstract class RegularLevel extends Level {
 		
 		// drops 3/4/5 items 60%/30%/10% of the time
 		int nItems = 3 + Random.chances(new float[]{6, 3, 1});
+
+		if (feeling == Feeling.LARGE){
+			nItems += 2;
+		}
 		
 		for (int i=0; i < nItems; i++) {
 
@@ -356,7 +382,7 @@ public abstract class RegularLevel extends Level {
 			}
 		}
 
-		//use a separate generator for this to prevent held items and meta progress from affecting levelgen
+		//use a separate generator for this to prevent held items, meta progress, and talents from affecting levelgen
 		Random.pushGenerator( Dungeon.seedCurDepth() );
 
 		Item item = Bones.get();
@@ -385,6 +411,26 @@ public abstract class RegularLevel extends Level {
 						losBlocking[cell] = false;
 					}
 					rose.droppedPetals++;
+				}
+			}
+		}
+
+		//cached rations try to drop in a special room on floors 2/3/4/6/7/8, to a max of 4/6
+		if (Dungeon.hero.hasTalent(Talent.CACHED_RATIONS)){
+			Talent.CachedRationsDropped dropped = Buff.affect(Dungeon.hero, Talent.CachedRationsDropped.class);
+			if (dropped.count() < 2 + 2*Dungeon.hero.pointsInTalent(Talent.CACHED_RATIONS)){
+				int cell;
+				int tries = 100;
+				do {
+					cell = randomDropCell(SpecialRoom.class);
+				} while (tries-- > 0 && (room(cell) instanceof SecretRoom || room(cell) instanceof ShopRoom));
+				if (!(room(cell) instanceof SecretRoom || room(cell) instanceof ShopRoom) && cell != -1) {
+					if (map[cell] == Terrain.HIGH_GRASS || map[cell] == Terrain.FURROWED_GRASS) {
+						map[cell] = Terrain.GRASS;
+						losBlocking[cell] = false;
+					}
+					drop(new SmallRation(), cell).type = Heap.Type.CHEST;
+					dropped.countUp(1);
 				}
 			}
 		}
@@ -452,13 +498,21 @@ public abstract class RegularLevel extends Level {
 		
 		return null;
 	}
+
+	protected int randomDropCell(){
+		return randomDropCell(StandardRoom.class);
+	}
 	
-	protected int randomDropCell() {
-		while (true) {
-			Room room = randomRoom( StandardRoom.class );
-			if (room != null && room != roomEntrance) {
+	protected int randomDropCell( Class<?extends Room> roomType ) {
+		int tries = 100;
+		while (tries-- > 0) {
+			Room room = randomRoom( roomType );
+			if (room == null){
+				return -1;
+			}
+			if (room != roomEntrance) {
 				int pos = pointToCell(room.random());
-				if (passable[pos]
+				if (passable[pos] && !solid[pos]
 						&& pos != exit
 						&& heaps.get(pos) == null
 						&& findMob(pos) == null) {
@@ -476,6 +530,7 @@ public abstract class RegularLevel extends Level {
 				}
 			}
 		}
+		return -1;
 	}
 	
 	@Override

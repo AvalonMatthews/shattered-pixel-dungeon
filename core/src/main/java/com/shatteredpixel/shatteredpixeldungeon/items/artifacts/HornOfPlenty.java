@@ -23,11 +23,13 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
@@ -86,16 +88,20 @@ public class HornOfPlenty extends Artifact {
 			else if (charge == 0)  GLog.i( Messages.get(this, "no_food") );
 			else {
 				//consume as much food as it takes to be full, to a minimum of 1
-				Hunger hunger = Buff.affect(Dungeon.hero, Hunger.class);
-				int chargesToUse = Math.max( 1, hunger.hunger() / (int)(Hunger.STARVING/10));
-				if (chargesToUse > charge) chargesToUse = charge;
-				hunger.satisfy((Hunger.STARVING/10) * chargesToUse);
+				int satietyPerCharge = (int) (Hunger.STARVING/10f);
+				if (Dungeon.isChallenged(Challenges.NO_FOOD)){
+					satietyPerCharge /= 3;
+				}
 
-				Food.foodProc( hero );
+				Hunger hunger = Buff.affect(Dungeon.hero, Hunger.class);
+				int chargesToUse = Math.max( 1, hunger.hunger() / satietyPerCharge);
+				if (chargesToUse > charge) chargesToUse = charge;
+				hunger.satisfy(satietyPerCharge * chargesToUse);
 
 				Statistics.foodEaten++;
 
 				charge -= chargesToUse;
+				Talent.onArtifactUsed(hero);
 
 				hero.sprite.operate(hero.pos);
 				hero.busy();
@@ -103,7 +109,16 @@ public class HornOfPlenty extends Artifact {
 				Sample.INSTANCE.play(Assets.Sounds.EAT);
 				GLog.i( Messages.get(this, "eat") );
 
-				hero.spend(Food.TIME_TO_EAT);
+				if (Dungeon.hero.hasTalent(Talent.IRON_STOMACH)
+						|| Dungeon.hero.hasTalent(Talent.ENERGIZING_MEAL)
+						|| Dungeon.hero.hasTalent(Talent.MYSTICAL_MEAL)
+						|| Dungeon.hero.hasTalent(Talent.INVIGORATING_MEAL)){
+					hero.spend(Food.TIME_TO_EAT - 2);
+				} else {
+					hero.spend(Food.TIME_TO_EAT);
+				}
+
+				Talent.onFoodEaten(hero, satietyPerCharge * chargesToUse, this);
 
 				Badges.validateFoodEaten();
 
@@ -128,9 +143,9 @@ public class HornOfPlenty extends Artifact {
 	}
 	
 	@Override
-	public void charge(Hero target) {
+	public void charge(Hero target, float amount) {
 		if (charge < chargeCap){
-			partialCharge += 0.25f;
+			partialCharge += 0.25f*amount;
 			if (partialCharge >= 1){
 				partialCharge--;
 				charge++;

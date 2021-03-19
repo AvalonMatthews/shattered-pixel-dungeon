@@ -21,35 +21,49 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
-import com.shatteredpixel.shatteredpixeldungeon.effects.particles.EarthParticle;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.noosa.Image;
 
-//pre-0.7.0, otherwise unused
-public class EarthImbue extends FlavourBuff {
-	
+public class EnhancedRings extends FlavourBuff{
+
 	{
-		type = buffType.POSITIVE;
-		announced = true;
+		type = Buff.buffType.POSITIVE;
 	}
 
-	public static final float DURATION	= 30f;
+	@Override
+	public boolean attachTo(Char target) {
+		if (super.attachTo(target)){
+			if (target instanceof Hero) ((Hero) target).updateHT(false);
+			return true;
+		}
+		return false;
+	}
 
-	public void proc(Char enemy){
-		Buff.affect(enemy, Cripple.class, 2);
-		CellEmitter.bottom(enemy.pos).start(EarthParticle.FACTORY, 0.05f, 8);
+	@Override
+	public void detach() {
+		super.detach();
+		if (target instanceof Hero) ((Hero) target).updateHT(false);
 	}
 
 	@Override
 	public int icon() {
-		return BuffIndicator.ROOTS;
+		return BuffIndicator.UPGRADE;
+	}
+
+	@Override
+	public void tintIcon(Image icon) {
+		icon.hardlight(0, 1, 0);
 	}
 
 	@Override
 	public float iconFadePercent() {
-		return Math.max(0, (DURATION - visualcooldown()) / DURATION);
+		float max = 3*Dungeon.hero.pointsInTalent(Talent.ENHANCED_RINGS);
+		return Math.max(0, (max-visualcooldown()) / max);
 	}
 
 	@Override
@@ -59,7 +73,6 @@ public class EarthImbue extends FlavourBuff {
 
 	@Override
 	public String desc() {
-		return Messages.get(this, "desc", dispTurns());
+		return Messages.get(this, "desc", (int)visualcooldown());
 	}
-	
 }

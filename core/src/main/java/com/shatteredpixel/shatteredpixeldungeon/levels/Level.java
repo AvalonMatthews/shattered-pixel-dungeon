@@ -35,13 +35,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WellWater;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Awareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Shadows;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -56,7 +58,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
-import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
@@ -101,7 +102,10 @@ public abstract class Level implements Bundlable {
 		CHASM,
 		WATER,
 		GRASS,
-		DARK
+		DARK,
+		LARGE,
+		TRAPS,
+		SECRETS
 	}
 
 	protected int width;
@@ -179,11 +183,7 @@ public abstract class Level implements Bundlable {
 		
 		if (!(Dungeon.bossLevel())) {
 
-			if (Dungeon.isChallenged(Challenges.NO_FOOD)){
-				addItemToSpawn( new SmallRation() );
-			} else {
-				addItemToSpawn(Generator.random(Generator.Category.FOOD));
-			}
+			addItemToSpawn(Generator.random(Generator.Category.FOOD));
 
 			if (Dungeon.isChallenged(Challenges.DARKNESS)){
 				addItemToSpawn( new Torch() );
@@ -213,23 +213,33 @@ public abstract class Level implements Bundlable {
 			}
 			
 			if (Dungeon.depth > 1) {
-				switch (Random.Int( 10 )) {
-				case 0:
-					if (!Dungeon.bossLevel( Dungeon.depth + 1 )) {
+				//50% chance of getting a level feeling
+				//~7.15% chance for each feeling
+				switch (Random.Int( 14 )) {
+					case 0:
 						feeling = Feeling.CHASM;
-					}
-					break;
-				case 1:
-					feeling = Feeling.WATER;
-					break;
-				case 2:
-					feeling = Feeling.GRASS;
-					break;
-				case 3:
-					feeling = Feeling.DARK;
-					addItemToSpawn(new Torch());
-					viewDistance = Math.round(viewDistance/2f);
-					break;
+						break;
+					case 1:
+						feeling = Feeling.WATER;
+						break;
+					case 2:
+						feeling = Feeling.GRASS;
+						break;
+					case 3:
+						feeling = Feeling.DARK;
+						addItemToSpawn(new Torch());
+						viewDistance = Math.round(viewDistance/2f);
+						break;
+					case 4:
+						feeling = Feeling.LARGE;
+						addItemToSpawn(Generator.random(Generator.Category.FOOD));
+						break;
+					case 5:
+						feeling = Feeling.TRAPS;
+						break;
+					case 6:
+						feeling = Feeling.SECRETS;
+						break;
 				}
 			}
 		}
@@ -299,8 +309,8 @@ public abstract class Level implements Bundlable {
 
 		version = bundle.getInt( VERSION );
 		
-		//saves from before v0.7.3b are not supported
-		if (version < ShatteredPixelDungeon.v0_7_3b){
+		//saves from before v0.7.5e are not supported
+		if (version < ShatteredPixelDungeon.v0_7_5e){
 			throw new RuntimeException("old save");
 		}
 
@@ -450,8 +460,12 @@ public abstract class Level implements Bundlable {
 		if (mobsToSpawn == null || mobsToSpawn.isEmpty()) {
 			mobsToSpawn = Bestiary.getMobRotation(Dungeon.depth);
 		}
-		
-		return Reflection.newInstance(mobsToSpawn.remove(0));
+
+		Mob m = Reflection.newInstance(mobsToSpawn.remove(0));
+		if (Dungeon.isChallenged(Challenges.CHAMPION_ENEMIES)){
+			ChampionEnemy.rollForChampion(m);
+		}
+		return m;
 	}
 
 	abstract protected void createMobs();
@@ -543,6 +557,9 @@ public abstract class Level implements Bundlable {
 					GameScene.add( mob );
 					if (Statistics.amuletObtained) {
 						mob.beckon( Dungeon.hero.pos );
+					}
+					if (!mob.buffs(ChampionEnemy.class).isEmpty()){
+						GLog.w(Messages.get(ChampionEnemy.class, "warn"));
 					}
 					spend(Dungeon.level.respawnCooldown());
 				} else {
@@ -640,6 +657,7 @@ public abstract class Level implements Bundlable {
 		if (w != null && w.volume > 0){
 			for (int i=0; i < length(); i++) {
 				solid[i] = solid[i] || w.cur[i] > 0;
+				flamable[i] = flamable[i] || w.cur[i] > 0;
 			}
 		}
 		
@@ -678,7 +696,16 @@ public abstract class Level implements Bundlable {
 	}
 
 	public void destroy( int pos ) {
-		set( pos, Terrain.EMBERS );
+		//if raw tile type is flammable or empty
+		int terr = map[pos];
+		if (terr == Terrain.EMPTY || terr == Terrain.EMPTY_DECO
+				|| (Terrain.flags[map[pos]] & Terrain.FLAMABLE) != 0) {
+			set(pos, Terrain.EMBERS);
+		}
+		Blob web = blobs.get(Web.class);
+		if (web != null){
+			web.clear(pos);
+		}
 	}
 
 	public void cleanWalls() {
@@ -909,6 +936,19 @@ public abstract class Level implements Bundlable {
 			Web.affectChar( ch );
 		}
 
+		if ( (map[ch.pos] == Terrain.GRASS || map[ch.pos] == Terrain.EMBERS)
+				&& ch == Dungeon.hero && Dungeon.hero.hasTalent(Talent.REJUVENATING_STEPS)
+				&& ch.buff(Talent.RejuvenatingStepsCooldown.class) == null){
+
+			if (Dungeon.hero.buff(LockedFloor.class) != null && !Dungeon.hero.buff(LockedFloor.class).regenOn()){
+				set(ch.pos, Terrain.FURROWED_GRASS);
+			} else {
+				set(ch.pos, Terrain.HIGH_GRASS);
+			}
+			GameScene.updateMap(ch.pos);
+			Buff.affect(ch, Talent.RejuvenatingStepsCooldown.class, 15f - 5f*Dungeon.hero.pointsInTalent(Talent.REJUVENATING_STEPS));
+		}
+
 		if (!ch.flying){
 			
 			if (pit[ch.pos]){
@@ -945,7 +985,7 @@ public abstract class Level implements Bundlable {
 		case Terrain.SECRET_TRAP:
 			if (hard) {
 				trap = traps.get( cell );
-				GLog.i(Messages.get(Level.class, "hidden_trap", trap.name));
+				GLog.i(Messages.get(Level.class, "hidden_trap", trap.name()));
 			}
 			break;
 			
@@ -1011,7 +1051,9 @@ public abstract class Level implements Bundlable {
 			blobs.get(Web.class).clear(cell);
 		}
 	}
-	
+
+	private static boolean[] heroMindFov;
+
 	public void updateFieldOfView( Char c, boolean[] fieldOfView ) {
 
 		int cx = c.pos % width();
@@ -1035,7 +1077,9 @@ public abstract class Level implements Bundlable {
 			}
 			
 			int viewDist = c.viewDistance;
-			if (c instanceof Hero && ((Hero) c).subClass == HeroSubClass.SNIPER) viewDist *= 1.5f;
+			if (c instanceof Hero){
+				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
+			}
 			
 			ShadowCaster.castShadow( cx, cy, fieldOfView, blocking, viewDist );
 		} else {
@@ -1082,39 +1126,35 @@ public abstract class Level implements Bundlable {
 
 		//Currently only the hero can get mind vision or awareness
 		if (c.isAlive() && c == Dungeon.hero) {
+
+			if (heroMindFov == null || heroMindFov.length != length()){
+				heroMindFov = new boolean[length];
+			} else {
+				BArray.setFalse(heroMindFov);
+			}
+
 			Dungeon.hero.mindVisionEnemies.clear();
 			if (c.buff( MindVision.class ) != null) {
 				for (Mob mob : mobs) {
-					int p = mob.pos;
-
-					if (!fieldOfView[p]){
-						Dungeon.hero.mindVisionEnemies.add(mob);
+					for (int i : PathFinder.NEIGHBOURS9) {
+						heroMindFov[mob.pos + i] = true;
 					}
-
 				}
-			} else if (((Hero)c).heroClass == HeroClass.HUNTRESS) {
+			} else if (((Hero) c).hasTalent(Talent.HEIGHTENED_SENSES)) {
 				for (Mob mob : mobs) {
 					int p = mob.pos;
-					if (distance( c.pos, p) == 2) {
-
-						if (!fieldOfView[p]){
-							Dungeon.hero.mindVisionEnemies.add(mob);
+					if (!fieldOfView[p] && distance(c.pos, p) <= 1+((Hero) c).pointsInTalent(Talent.HEIGHTENED_SENSES)) {
+						for (int i : PathFinder.NEIGHBOURS9) {
+							heroMindFov[mob.pos + i] = true;
 						}
 					}
-				}
-			}
-			
-			for (Mob m : Dungeon.hero.mindVisionEnemies) {
-				for (int i : PathFinder.NEIGHBOURS9) {
-					fieldOfView[m.pos + i] = true;
 				}
 			}
 			
 			if (c.buff( Awareness.class ) != null) {
 				for (Heap heap : heaps.valueList()) {
 					int p = heap.pos;
-					for (int i : PathFinder.NEIGHBOURS9)
-						fieldOfView[p+i] = true;
+					for (int i : PathFinder.NEIGHBOURS9) heroMindFov[p+i] = true;
 				}
 			}
 
@@ -1126,14 +1166,12 @@ public abstract class Level implements Bundlable {
 					continue;
 				}
 				int p = ch.pos;
-				for (int i : PathFinder.NEIGHBOURS9)
-					fieldOfView[p+i] = true;
+				for (int i : PathFinder.NEIGHBOURS9) heroMindFov[p+i] = true;
 			}
 
 			for (TalismanOfForesight.HeapAwareness h : c.buffs(TalismanOfForesight.HeapAwareness.class)){
 				if (Dungeon.depth != h.depth) continue;
-				for (int i : PathFinder.NEIGHBOURS9)
-					fieldOfView[h.pos+i] = true;
+				for (int i : PathFinder.NEIGHBOURS9) heroMindFov[h.pos+i] = true;
 			}
 
 			for (Mob m : mobs){
@@ -1142,15 +1180,24 @@ public abstract class Level implements Bundlable {
 						m.fieldOfView = new boolean[length()];
 						Dungeon.level.updateFieldOfView( m, m.fieldOfView );
 					}
-					for (Mob m1 : mobs){
-						if (m.fieldOfView[m1.pos] && !fieldOfView[m1.pos] &&
-								!Dungeon.hero.mindVisionEnemies.contains(m1)){
-							Dungeon.hero.mindVisionEnemies.add(m1);
-						}
-					}
-					BArray.or(fieldOfView, m.fieldOfView, fieldOfView);
+					BArray.or(heroMindFov, m.fieldOfView, heroMindFov);
 				}
 			}
+
+			for (RevealedArea a : c.buffs(RevealedArea.class)){
+				if (Dungeon.depth != a.depth) continue;
+				for (int i : PathFinder.NEIGHBOURS9) heroMindFov[a.pos+i] = true;
+			}
+
+			//set mind vision chars
+			for (Mob mob : mobs) {
+				if (heroMindFov[mob.pos] && !fieldOfView[mob.pos]){
+					Dungeon.hero.mindVisionEnemies.add(mob);
+				}
+			}
+
+			BArray.or(heroMindFov, fieldOfView, fieldOfView);
+
 		}
 
 		if (c == Dungeon.hero) {

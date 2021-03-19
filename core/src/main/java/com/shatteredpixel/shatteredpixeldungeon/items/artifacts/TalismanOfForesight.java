@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CheckedCell;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
@@ -88,13 +89,13 @@ public class TalismanOfForesight extends Artifact {
 	}
 	
 	@Override
-	public void charge(Hero target) {
+	public void charge(Hero target, float amount) {
 		if (charge < chargeCap){
-			charge += 2f;
+			charge += Math.round(2*amount);
 			if (charge >= chargeCap) {
 				charge = chargeCap;
 				partialCharge = 0;
-				GLog.p( Messages.get(Foresight.class, "full_charge") );
+				GLog.p( Messages.get(TalismanOfForesight.class, "full_charge") );
 			}
 		}
 	}
@@ -205,13 +206,14 @@ public class TalismanOfForesight extends Artifact {
 					partialCharge ++;
 					charge --;
 				}
+				Talent.onArtifactUsed(Dungeon.hero);
 				updateQuickslot();
 				Dungeon.observe();
 				Dungeon.hero.checkVisibleMobs();
 				GameScene.updateFog();
 
 				curUser.sprite.zap(target);
-				curUser.spend(Actor.TICK);
+				curUser.spendAndNext(Actor.TICK);
 				Sample.INSTANCE.play(Assets.Sounds.SCAN);
 				if (noticed) Sample.INSTANCE.play(Assets.Sounds.SECRET);
 
@@ -316,7 +318,9 @@ public class TalismanOfForesight extends Artifact {
 		}
 
 		public void charge(int boost){
-			charge = Math.min((charge+boost), chargeCap);
+			if (!cursed) {
+				charge = Math.min((charge + boost), chargeCap);
+			}
 		}
 
 		@Override

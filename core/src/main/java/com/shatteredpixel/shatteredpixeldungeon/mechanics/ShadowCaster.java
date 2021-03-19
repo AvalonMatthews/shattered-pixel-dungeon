@@ -28,7 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.BArray;
 //based on: http://www.roguebasin.com/index.php?title=FOV_using_recursive_shadowcasting
 public final class ShadowCaster {
 
-	public static final int MAX_DISTANCE = 12;
+	public static final int MAX_DISTANCE = 14;
 	
 	//max length of rows as FOV moves out, for each FOV distance
 	//This is used to make the overall FOV circular, instead of square
@@ -80,9 +80,6 @@ public final class ShadowCaster {
 	                               int x, int y, double lSlope, double rSlope,
 	                               int mX, int mY, boolean mXY){
 		
-		//if we have negative space to traverse, just quit.
-		if (rSlope < lSlope) return;
-		
 		boolean inBlocking = false;
 		int start, end;
 		int col;
@@ -91,6 +88,9 @@ public final class ShadowCaster {
 		
 		//for each row, starting with the current one
 		for (; row <= distance; row++){
+
+			//if we have negative space to traverse, just quit.
+			if (rSlope < lSlope) return;
 			
 			//we offset by slightly less than 0.5 to account for slopes just touching a cell
 			if (lSlope == 0)    start = 0;
@@ -109,6 +109,13 @@ public final class ShadowCaster {
 			
 			//for each column in this row, which
 			for (col = start; col <= end; col++){
+
+
+				//handles the error case of the slope value at the end of a cell being 1 farther
+				// along then at the beginning of the cell, and that earlier cell is vision blocking
+				if (col == end && inBlocking && (int)Math.ceil((row - 0.5) * rSlope - 0.499) != end){
+					break;
+				}
 				
 				fov[cell] = true;
 				

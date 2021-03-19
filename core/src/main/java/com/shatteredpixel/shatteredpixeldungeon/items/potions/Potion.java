@@ -67,8 +67,8 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndUseItem;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndUseItem;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
@@ -86,21 +86,6 @@ public class Potion extends Item {
 	public static final String AC_CHOOSE = "CHOOSE";
 
 	private static final float TIME_TO_DRINK = 1f;
-
-	private static final Class<?>[] potions = {
-			PotionOfHealing.class,
-			PotionOfExperience.class,
-			PotionOfToxicGas.class,
-			PotionOfLiquidFlame.class,
-			PotionOfStrength.class,
-			PotionOfParalyticGas.class,
-			PotionOfLevitation.class,
-			PotionOfMindVision.class,
-			PotionOfPurity.class,
-			PotionOfInvisibility.class,
-			PotionOfHaste.class,
-			PotionOfFrost.class
-	};
 
 	private static final HashMap<String, Integer> colors = new HashMap<String, Integer>() {
 		{
@@ -160,7 +145,7 @@ public class Potion extends Item {
 	
 	@SuppressWarnings("unchecked")
 	public static void initColors() {
-		handler = new ItemStatusHandler<>( (Class<? extends Potion>[])potions, colors );
+		handler = new ItemStatusHandler<>( (Class<? extends Potion>[])Generator.Category.POTION.classes, colors );
 	}
 	
 	public static void save( Bundle bundle ) {
@@ -185,7 +170,7 @@ public class Potion extends Item {
 	
 	@SuppressWarnings("unchecked")
 	public static void restore( Bundle bundle ) {
-		handler = new ItemStatusHandler<>( (Class<? extends Potion>[])potions, colors, bundle );
+		handler = new ItemStatusHandler<>( (Class<? extends Potion>[])Generator.Category.POTION.classes, colors, bundle );
 	}
 	
 	public Potion() {
@@ -366,9 +351,12 @@ public class Potion extends Item {
 	
 	@Override
 	public Item identify() {
+		super.identify();
 
-		setKnown();
-		return super.identify();
+		if (!isKnown()) {
+			setKnown();
+		}
+		return this;
 	}
 	
 	@Override
@@ -400,7 +388,7 @@ public class Potion extends Item {
 	}
 	
 	public static boolean allKnown() {
-		return handler.known().size() == potions.length;
+		return handler.known().size() == Generator.Category.POTION.classes.length;
 	}
 	
 	protected int splashColor(){
@@ -502,12 +490,12 @@ public class Potion extends Item {
 				}
 			}
 			
-			Item result;
+			Potion result;
 			
 			if ( (seeds.size() == 2 && Random.Int(4) == 0)
 					|| (seeds.size() == 3 && Random.Int(2) == 0)) {
 				
-				result = Generator.randomUsingDefaults( Generator.Category.POTION );
+				result = (Potion) Generator.randomUsingDefaults( Generator.Category.POTION );
 				
 			} else {
 				result = Reflection.newInstance(types.get(Random.element(ingredients).getClass()));
@@ -522,7 +510,7 @@ public class Potion extends Item {
 					&& (Dungeon.isChallenged(Challenges.NO_HEALING)
 					|| Random.Int(10) < Dungeon.LimitedDrops.COOKING_HP.count)) {
 
-				result = Generator.randomUsingDefaults(Generator.Category.POTION);
+				result = (Potion) Generator.randomUsingDefaults(Generator.Category.POTION);
 			}
 			
 			if (result instanceof PotionOfHealing) {

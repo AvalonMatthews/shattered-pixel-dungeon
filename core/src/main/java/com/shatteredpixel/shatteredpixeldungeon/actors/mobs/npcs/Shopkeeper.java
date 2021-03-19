@@ -83,7 +83,12 @@ public class Shopkeeper extends NPC {
 		for (Heap heap: Dungeon.level.heaps.valueList()) {
 			if (heap.type == Heap.Type.FOR_SALE) {
 				CellEmitter.get( heap.pos ).burst( ElmoParticle.FACTORY, 4 );
-				heap.destroy();
+				if (heap.size() == 1) {
+					heap.destroy();
+				} else {
+					heap.items.remove(heap.size()-1);
+					heap.type = Heap.Type.HEAP;
+				}
 			}
 		}
 	}
@@ -103,7 +108,7 @@ public class Shopkeeper extends NPC {
 	}
 
 	public static boolean willBuyItem( Item item ){
-		if (item.value() < 0)                                               return false;
+		if (item.value() <= 0)                                               return false;
 		if (item.unique && !item.stackable)                                 return false;
 		if (item instanceof Armor && ((Armor) item).checkSeal() != null)    return false;
 		if (item.isEquipped(Dungeon.hero) && item.cursed)                   return false;

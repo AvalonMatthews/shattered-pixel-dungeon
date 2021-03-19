@@ -127,16 +127,16 @@ public class AboutScene extends PixelScene {
 		}
 		content.add(cube);
 
-		//*** LibGDX Credits ***
+		//*** libGDX Credits ***
 
 		final int GDX_COLOR = 0xE44D3C;
 		CreditsBlock gdx = new CreditsBlock(true,
 				GDX_COLOR,
 				null,
 				Icons.LIBGDX.get(),
-				"ShatteredPD is powered by _LibGDX_!",
-				"libgdx.badlogicgames.com",
-				"http://libgdx.badlogicgames.com");
+				"ShatteredPD is powered by _libGDX_!",
+				"libGDX.com",
+				"https://libGDX.com/");
 		if (landscape()){
 			gdx.setRect(wata.left(), wata.bottom() + 8, colWidth, 0);
 		} else {

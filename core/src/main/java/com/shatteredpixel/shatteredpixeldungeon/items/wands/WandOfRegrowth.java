@@ -26,13 +26,14 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Doom;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Dewdrop;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blooming;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -40,6 +41,7 @@ import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.ConeAOE;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Sungrass;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.LotusSprite;
@@ -58,10 +60,11 @@ public class WandOfRegrowth extends Wand {
 	{
 		image = ItemSpriteSheet.WAND_REGROWTH;
 
-		collisionProperties = Ballistica.STOP_TERRAIN;
+		collisionProperties = Ballistica.STOP_SOLID;
 	}
 	
 	private int totChrgUsed = 0;
+	private int chargesOverLimit = 0;
 
 	ConeAOE cone;
 	int target;
@@ -81,8 +84,10 @@ public class WandOfRegrowth extends Wand {
 
 		ArrayList<Integer> cells = new ArrayList<>(cone.cells);
 
-		int overLimit = totChrgUsed - chargeLimit(Dungeon.hero.lvl);
-		float furrowedChance = overLimit > 0 ? (overLimit / (10f + Dungeon.hero.lvl)) : 0;
+		float furrowedChance = 0;
+		if (totChrgUsed >= chargeLimit(Dungeon.hero.lvl)){
+			furrowedChance = (chargesOverLimit+1)/5f;
+		}
 
 		int chrgUsed = chargesPerCast();
 		int grassToPlace = Math.round((3.67f+buffedLvl()/3f)*chrgUsed);
@@ -91,12 +96,8 @@ public class WandOfRegrowth extends Wand {
 		for (Iterator<Integer> i = cells.iterator(); i.hasNext();) {
 			int cell = i.next();
 			int terr = Dungeon.level.map[cell];
-			if (!(terr == Terrain.EMPTY ||
-					terr == Terrain.EMBERS ||
-					terr == Terrain.EMPTY_DECO ||
-					terr == Terrain.GRASS ||
-					terr == Terrain.HIGH_GRASS ||
-					terr == Terrain.FURROWED_GRASS)) {
+			if (!(terr == Terrain.EMPTY || terr == Terrain.EMBERS || terr == Terrain.EMPTY_DECO ||
+					terr == Terrain.GRASS || terr == Terrain.HIGH_GRASS || terr == Terrain.FURROWED_GRASS)) {
 				i.remove();
 			} else if (Char.hasProp(Actor.findChar(cell), Char.Property.IMMOVABLE)) {
 				i.remove();
@@ -179,9 +180,17 @@ public class WandOfRegrowth extends Wand {
 			grassToPlace--;
 		}
 
-		if (furrowedChance < 1f) {
+		if (totChrgUsed < chargeLimit(Dungeon.hero.lvl)) {
+			chargesOverLimit = 0;
 			totChrgUsed += chrgUsed;
+			if (totChrgUsed > chargeLimit(Dungeon.hero.lvl)){
+				chargesOverLimit = totChrgUsed - chargeLimit(Dungeon.hero.lvl);
+				totChrgUsed = chargeLimit(Dungeon.hero.lvl);
+			}
+		} else {
+			chargesOverLimit += chrgUsed;
 		}
+
 	}
 	
 	private int chargeLimit( int heroLvl ){
@@ -197,7 +206,27 @@ public class WandOfRegrowth extends Wand {
 
 	@Override
 	public void onHit(MagesStaff staff, Char attacker, Char defender, int damage) {
-		new Blooming().proc(staff, attacker, defender, damage);
+		//like pre-nerf vampiric enchantment, except with herbal healing buff, only in grass
+		boolean grass = false;
+		int terr = Dungeon.level.map[attacker.pos];
+		if (terr == Terrain.GRASS || terr == Terrain.HIGH_GRASS || terr == Terrain.FURROWED_GRASS){
+			grass = true;
+		}
+		terr = Dungeon.level.map[defender.pos];
+		if (terr == Terrain.GRASS || terr == Terrain.HIGH_GRASS || terr == Terrain.FURROWED_GRASS){
+			grass = true;
+		}
+
+		if (grass) {
+			int level = Math.max(0, staff.buffedLvl());
+
+			// lvl 0 - 16%
+			// lvl 1 - 21%
+			// lvl 2 - 25%
+			int healing = Math.round(damage * (level + 2f) / (level + 6f) / 2f);
+			Buff.affect(attacker, Sungrass.Health.class).boost(healing);
+		}
+
 	}
 
 	protected void fx( Ballistica bolt, Callback callback ) {
@@ -238,7 +267,12 @@ public class WandOfRegrowth extends Wand {
 
 	@Override
 	public String statsDesc() {
-		return Messages.get(this, "stats_desc", chargesPerCast());
+		String desc = Messages.get(this, "stats_desc", chargesPerCast());
+		if (isIdentified()){
+			int chargeLeft = chargeLimit(Dungeon.hero.lvl) - totChrgUsed;
+			if (chargeLeft < 10000) desc += " " + Messages.get(this, "degradation", Math.max(chargeLeft, 0));
+		}
+		return desc;
 	}
 
 	@Override
@@ -254,17 +288,20 @@ public class WandOfRegrowth extends Wand {
 	}
 	
 	private static final String TOTAL = "totChrgUsed";
+	private static final String OVER = "chargesOverLimit";
 	
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put( TOTAL, totChrgUsed );
+		bundle.put( OVER, chargesOverLimit);
 	}
 	
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		totChrgUsed = bundle.getInt(TOTAL);
+		chargesOverLimit = bundle.getInt(OVER);
 	}
 	
 	public static class Dewcatcher extends Plant{
@@ -401,6 +438,11 @@ public class WandOfRegrowth extends Wand {
 		@Override
 		public boolean isInvulnerable(Class effect) {
 			return true;
+		}
+
+		{
+			immunities.add(Corruption.class);
+			immunities.add(Doom.class);
 		}
 
 		@Override

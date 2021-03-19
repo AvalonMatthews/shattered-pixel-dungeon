@@ -58,13 +58,12 @@ public class WildEnergy extends TargetedSpell {
 				ScrollOfRecharging.charge(hero);
 
 				hero.belongings.charge(1f);
-				for (int i = 0; i < 4; i++){
-					if (hero.belongings.artifact instanceof Artifact)   ((Artifact) hero.belongings.artifact).charge(hero);
-					if (hero.belongings.misc instanceof Artifact)       ((Artifact) hero.belongings.misc).charge(hero);
+				for (Buff b : hero.buffs()){
+					if (b instanceof Artifact.ArtifactBuff) ((Artifact.ArtifactBuff) b).charge(hero, 4);
 				}
 
 				Buff.affect(hero, Recharging.class, 8f);
-				Buff.affect(hero, ArtifactRecharge.class).prolong( 8 );
+				Buff.affect(hero, ArtifactRecharge.class).prolong( 8 ).ignoreHornOfPlenty = false;
 				
 				detach( curUser.belongings.backpack );
 				updateQuickslot();

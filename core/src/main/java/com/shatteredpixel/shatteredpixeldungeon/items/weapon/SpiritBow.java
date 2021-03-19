@@ -25,7 +25,10 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfFuror;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfSharpshooting;
@@ -57,6 +60,7 @@ public class SpiritBow extends Weapon {
 	}
 	
 	public boolean sniperSpecial = false;
+	public float sniperSpecialBonusDamage = 0f;
 	
 	@Override
 	public ArrayList<String> actions(Hero hero) {
@@ -125,9 +129,7 @@ public class SpiritBow extends Weapon {
 	
 	@Override
 	public int STRReq(int lvl) {
-		lvl = Math.max(0, lvl);
-		//strength req decreases at +1,+3,+6,+10,etc.
-		return 10 - (int)(Math.sqrt(8 * lvl + 1) - 1)/2;
+		return STRReq(1, lvl); //tier 1
 	}
 	
 	@Override
@@ -143,6 +145,11 @@ public class SpiritBow extends Weapon {
 				+ 2*RingOfSharpshooting.levelDamageBonus(Dungeon.hero)
 				+ (curseInfusionBonus ? 2 : 0);
 	}
+
+	@Override
+	public int targetingPos(Hero user, int dst) {
+		return knockArrow().targetingPos(user, dst);
+	}
 	
 	private int targetPos;
 	
@@ -156,8 +163,10 @@ public class SpiritBow extends Weapon {
 				damage += Random.IntRange( 0, exStr );
 			}
 		}
-		
+
 		if (sniperSpecial){
+			damage = Math.round(damage * (1f + sniperSpecialBonusDamage));
+
 			switch (augment){
 				case NONE:
 					damage = Math.round(damage * 0.667f);
@@ -255,7 +264,7 @@ public class SpiritBow extends Weapon {
 		public int STRReq(int lvl) {
 			return SpiritBow.this.STRReq(lvl);
 		}
-		
+
 		@Override
 		protected void onThrow( int cell ) {
 			Char enemy = Actor.findChar( cell );
@@ -331,6 +340,18 @@ public class SpiritBow extends Weapon {
 				});
 				
 			} else {
+
+				if (user.hasTalent(Talent.SEER_SHOT)
+						&& user.buff(Talent.SeerShotCooldown.class) == null){
+					int shotPos = throwPos(user, dst);
+					if (Actor.findChar(shotPos) == null) {
+						RevealedArea a = Buff.affect(user, RevealedArea.class, 5 * user.pointsInTalent(Talent.SEER_SHOT));
+						a.depth = Dungeon.depth;
+						a.pos = shotPos;
+						Buff.affect(user, Talent.SeerShotCooldown.class, 20f);
+					}
+				}
+
 				super.cast(user, dst);
 			}
 		}

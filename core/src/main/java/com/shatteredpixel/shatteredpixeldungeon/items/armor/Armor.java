@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.armor;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -29,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
@@ -106,7 +108,7 @@ public class Armor extends EquipableItem {
 	public int tier;
 	
 	private static final int USES_TO_ID = 10;
-	private int usesLeftToID = USES_TO_ID;
+	private float usesLeftToID = USES_TO_ID;
 	private float availableUsesToID = USES_TO_ID/2f;
 	
 	public Armor( int tier ) {
@@ -168,15 +170,28 @@ public class Armor extends EquipableItem {
 			BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
 			if (sealBuff != null) sealBuff.setArmor(null);
 
-			if (seal.level() > 0){
+			BrokenSeal detaching = seal;
+			seal = null;
+
+			if (detaching.level() > 0){
 				degrade();
+			}
+			if (detaching.getGlyph() != null){
+				if (hero.hasTalent(Talent.RUNIC_TRANSFERENCE)
+						&& (Arrays.asList(Glyph.common).contains(detaching.getGlyph().getClass())
+							|| Arrays.asList(Glyph.uncommon).contains(detaching.getGlyph().getClass()))){
+					inscribe(null);
+				} else if (hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) == 2){
+					inscribe(null);
+				} else {
+					detaching.setGlyph(null);
+				}
 			}
 			GLog.i( Messages.get(Armor.class, "detach_seal") );
 			hero.sprite.operate(hero.pos);
-			if (!seal.collect()){
-				Dungeon.level.drop(seal, hero.pos);
+			if (!detaching.collect()){
+				Dungeon.level.drop(detaching, hero.pos);
 			}
-			seal = null;
 		}
 	}
 
@@ -197,7 +212,7 @@ public class Armor extends EquipableItem {
 			
 			((HeroSprite)hero.sprite).updateArmor();
 			activate(hero);
-
+			Talent.onItemEquipped(hero, this);
 			hero.spendAndNext( time2equip( hero ) );
 			return true;
 			
@@ -220,6 +235,9 @@ public class Armor extends EquipableItem {
 			//doesn't trigger upgrading logic such as affecting curses/glyphs
 			level(level()+1);
 			Badges.validateItemLevelAquired(this);
+		}
+		if (seal.getGlyph() != null){
+			inscribe(seal.getGlyph());
 		}
 		if (isEquipped(Dungeon.hero)){
 			Buff.affect(Dungeon.hero, BrokenSeal.WarriorShield.class).setArmor(this);
@@ -264,6 +282,10 @@ public class Armor extends EquipableItem {
 	}
 
 	public int DRMax(int lvl){
+		if (Dungeon.isChallenged(Challenges.NO_ARMOR)){
+			return 1 + tier + lvl + augment.defenseFactor(lvl);
+		}
+
 		int max = tier * (2 + lvl) + augment.defenseFactor(lvl);
 		if (lvl > max){
 			return ((lvl - max)+1)/2;
@@ -277,6 +299,10 @@ public class Armor extends EquipableItem {
 	}
 
 	public int DRMin(int lvl){
+		if (Dungeon.isChallenged(Challenges.NO_ARMOR)){
+			return 0;
+		}
+
 		int max = DRMax(lvl);
 		if (lvl >= max){
 			return (lvl - max);
@@ -297,7 +323,7 @@ public class Armor extends EquipableItem {
 			
 			Momentum momentum = owner.buff(Momentum.class);
 			if (momentum != null){
-				evasion += momentum.evasionBonus(Math.max(0, -aEnc));
+				evasion += momentum.evasionBonus(((Hero) owner).lvl, Math.max(0, -aEnc));
 			}
 		}
 		
@@ -386,9 +412,10 @@ public class Armor extends EquipableItem {
 			damage = glyph.proc( this, attacker, defender, damage );
 		}
 		
-		if (!levelKnown && defender == Dungeon.hero && availableUsesToID >= 1) {
-			availableUsesToID--;
-			usesLeftToID--;
+		if (!levelKnown && defender == Dungeon.hero) {
+			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(Dungeon.hero, this) );
+			availableUsesToID -= uses;
+			usesLeftToID -= uses;
 			if (usesLeftToID <= 0) {
 				identify();
 				GLog.p( Messages.get(Armor.class, "identify") );
@@ -401,6 +428,7 @@ public class Armor extends EquipableItem {
 	
 	@Override
 	public void onHeroGainExp(float levelPercent, Hero hero) {
+		levelPercent *= Talent.itemIDSpeedFactor(hero, this);
 		if (!levelKnown && isEquipped(hero) && availableUsesToID <= USES_TO_ID/2f) {
 			//gains enough uses to ID over 0.5 levels
 			availableUsesToID = Math.min(USES_TO_ID/2f, availableUsesToID + levelPercent * USES_TO_ID);
@@ -432,10 +460,10 @@ public class Armor extends EquipableItem {
 
 		switch (augment) {
 			case EVASION:
-				info += "\n\n" + Messages.get(Armor.class, "evasion");
+				info += " " + Messages.get(Armor.class, "evasion");
 				break;
 			case DEFENSE:
-				info += "\n\n" + Messages.get(Armor.class, "defense");
+				info += " " + Messages.get(Armor.class, "defense");
 				break;
 			case NONE:
 		}
@@ -500,10 +528,20 @@ public class Armor extends EquipableItem {
 	}
 
 	public int STRReq(int lvl){
+		return STRReq(tier, lvl);
+	}
+
+	protected static int STRReq(int tier, int lvl){
 		lvl = Math.max(0, lvl);
 
 		//strength req decreases at +1,+3,+6,+10,etc.
-		return (8 + Math.round(tier * 2)) - (int)(Math.sqrt(8 * lvl + 1) - 1)/2;
+		int req = (8 + Math.round(tier * 2)) - (int)(Math.sqrt(8 * lvl + 1) - 1)/2;
+
+		if (Dungeon.hero.hasTalent(Talent.STRONGMAN)){
+			req -= (Dungeon.hero.pointsInTalent(Talent.STRONGMAN)+1)/2;
+		}
+
+		return req;
 	}
 	
 	@Override
@@ -530,6 +568,11 @@ public class Armor extends EquipableItem {
 		if (glyph == null || !glyph.curse()) curseInfusionBonus = false;
 		this.glyph = glyph;
 		updateQuickslot();
+		//the hero needs runic transference to actually transfer, but we still attach the glyph here
+		// in case they take that talent in the future
+		if (seal != null){
+			seal.setGlyph(glyph);
+		}
 		return this;
 	}
 

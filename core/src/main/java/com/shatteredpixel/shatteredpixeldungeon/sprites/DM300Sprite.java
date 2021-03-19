@@ -45,10 +45,12 @@ public class DM300Sprite extends MobSprite {
 		
 		texture( Assets.Sprites.DM300 );
 		
-		setAnimations(false);
+		updateChargeState(false);
 	}
 
-	private void setAnimations( boolean enraged ){
+	public void updateChargeState( boolean enraged ){
+		if (superchargeSparks != null) superchargeSparks.on = enraged;
+
 		int c = enraged ? 10 : 0;
 
 		TextureFilm frames = new TextureFilm( texture, 25, 22 );
@@ -95,7 +97,7 @@ public class DM300Sprite extends MobSprite {
 						((NewDM300)ch).onZapComplete();
 					}
 				} );
-		Sample.INSTANCE.play( Assets.Sounds.PUFF );
+		Sample.INSTANCE.play( Assets.Sounds.GAS );
 	}
 
 	public void charge(){
@@ -108,8 +110,6 @@ public class DM300Sprite extends MobSprite {
 		Sample.INSTANCE.play( Assets.Sounds.ROCKS );
 		Camera.main.shake( 3, 0.7f );
 	}
-
-	private boolean exploded = false;
 
 	@Override
 	public void onComplete( Animation anim ) {
@@ -124,8 +124,7 @@ public class DM300Sprite extends MobSprite {
 
 		super.onComplete( anim );
 		
-		if (anim == die && !exploded) {
-			exploded = true;
+		if (anim == die) {
 			Sample.INSTANCE.play(Assets.Sounds.BLAST);
 			emitter().burst( BlastParticle.FACTORY, 100 );
 			killAndErase();
@@ -148,8 +147,7 @@ public class DM300Sprite extends MobSprite {
 		superchargeSparks.on = false;
 
 		if (ch instanceof NewDM300 && ((NewDM300) ch).isSupercharged()){
-			setAnimations(true);
-			superchargeSparks.on = true;
+			updateChargeState(true);
 		}
 	}
 
@@ -159,11 +157,6 @@ public class DM300Sprite extends MobSprite {
 
 		if (superchargeSparks != null){
 			superchargeSparks.visible = visible;
-			if (ch instanceof NewDM300
-					&& ((NewDM300) ch).isSupercharged() != superchargeSparks.on){
-				superchargeSparks.on = ((NewDM300) ch).isSupercharged();
-				setAnimations(((NewDM300) ch).isSupercharged());
-			}
 		}
 	}
 

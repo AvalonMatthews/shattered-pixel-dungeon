@@ -30,6 +30,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BannerSprites;
@@ -51,7 +53,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
@@ -168,7 +173,7 @@ public class GameScene extends PixelScene {
 	@Override
 	public void create() {
 		
-		if (Dungeon.hero == null){
+		if (Dungeon.hero == null || Dungeon.level == null){
 			ShatteredPixelDungeon.switchNoFade(TitleScene.class);
 			return;
 		}
@@ -203,6 +208,7 @@ public class GameScene extends PixelScene {
 				Blending.enable();
 			}
 		};
+		water.autoAdjust = true;
 		terrain.add( water );
 
 		ripples = new Group();
@@ -469,24 +475,49 @@ public class GameScene extends PixelScene {
 				GLog.h(Messages.get(this, "return"), Dungeon.depth);
 			}
 
-			switch (Dungeon.level.feeling) {
-				case CHASM:
-					GLog.w(Messages.get(this, "chasm"));
-					break;
-				case WATER:
-					GLog.w(Messages.get(this, "water"));
-					break;
-				case GRASS:
-					GLog.w(Messages.get(this, "grass"));
-					break;
-				case DARK:
-					GLog.w(Messages.get(this, "dark"));
-					break;
-				default:
+			if (Dungeon.hero.hasTalent(Talent.ROGUES_FORESIGHT)
+					&& Dungeon.level instanceof RegularLevel){
+				int reqSecrets = Dungeon.level.feeling == Level.Feeling.SECRETS ? 2 : 1;
+				for (Room r : ((RegularLevel) Dungeon.level).rooms()){
+					if (r instanceof SecretRoom) reqSecrets--;
+				}
+
+				//50%/75% chance, use level's seed so that we get the same result for the same level
+				Random.pushGenerator(Dungeon.seedCurDepth());
+					if (reqSecrets <= 0 && Random.Int(4) <= Dungeon.hero.pointsInTalent(Talent.ROGUES_FORESIGHT)){
+						GLog.p(Messages.get(this, "secret_hint"));
+					}
+				Random.popGenerator();
 			}
-			if (Dungeon.level instanceof RegularLevel &&
-					((RegularLevel) Dungeon.level).secretDoors > Random.IntRange(3, 4)) {
-				GLog.w(Messages.get(this, "secrets"));
+
+			boolean unspentTalents = false;
+			for (int i = 1; i <= Dungeon.hero.talents.size(); i++){
+				if (Dungeon.hero.talentPointsAvailable(i) > 0){
+					unspentTalents = true;
+					break;
+				}
+			}
+			if (unspentTalents){
+				GLog.newLine();
+				GLog.w( Messages.get(Dungeon.hero, "unspent") );
+				StatusPane.talentBlink = 10f;
+				WndHero.lastIdx = 1;
+			}
+
+			switch (Dungeon.level.feeling) {
+				case CHASM:     GLog.w(Messages.get(this, "chasm"));    break;
+				case WATER:     GLog.w(Messages.get(this, "water"));    break;
+				case GRASS:     GLog.w(Messages.get(this, "grass"));    break;
+				case DARK:      GLog.w(Messages.get(this, "dark"));     break;
+				case LARGE:     GLog.w(Messages.get(this, "large"));    break;
+				case TRAPS:     GLog.w(Messages.get(this, "traps"));    break;
+				case SECRETS:   GLog.w(Messages.get(this, "secrets"));  break;
+			}
+
+			for (Mob mob : Dungeon.level.mobs) {
+				if (!mob.buffs(ChampionEnemy.class).isEmpty()) {
+					GLog.w(Messages.get(ChampionEnemy.class, "warn"));
+				}
 			}
 
 			InterlevelScene.mode = InterlevelScene.Mode.NONE;
@@ -501,24 +532,10 @@ public class GameScene extends PixelScene {
 	public void destroy() {
 		
 		//tell the actor thread to finish, then wait for it to complete any actions it may be doing.
-		if (actorThread != null && actorThread.isAlive()){
-			synchronized (GameScene.class){
-				synchronized (actorThread) {
-					actorThread.interrupt();
-				}
-				try {
-					GameScene.class.wait(5000);
-				} catch (InterruptedException e) {
-					ShatteredPixelDungeon.reportException(e);
-				}
-				synchronized (actorThread) {
-					if (Actor.processing()) {
-						Throwable t = new Throwable();
-						t.setStackTrace(actorThread.getStackTrace());
-						throw new RuntimeException("timeout waiting for actor thread! ", t);
-					}
-				}
-			}
+		if (!waitForActorThread( 4500 )){
+			Throwable t = new Throwable();
+			t.setStackTrace(actorThread.getStackTrace());
+			throw new RuntimeException("timeout waiting for actor thread! ", t);
 		}
 
 		Emitter.freezeEmitters = false;
@@ -536,10 +553,30 @@ public class GameScene extends PixelScene {
 			actorThread.interrupt();
 		}
 	}
+
+	public boolean waitForActorThread(int msToWait ){
+		synchronized (GameScene.class) {
+			if (actorThread == null || !actorThread.isAlive()) {
+				return true;
+			}
+			synchronized (actorThread) {
+				actorThread.interrupt();
+			}
+			try {
+				GameScene.class.wait(msToWait);
+			} catch (InterruptedException e) {
+				ShatteredPixelDungeon.reportException(e);
+			}
+			synchronized (actorThread) {
+				return !Actor.processing();
+			}
+		}
+	}
 	
 	@Override
 	public synchronized void onPause() {
 		try {
+			waitForActorThread(500);
 			Dungeon.saveAll();
 			Badges.saveGlobal();
 			Journal.saveGlobal();
@@ -810,7 +847,7 @@ public class GameScene extends PixelScene {
 	}
 	
 	public static void effect( Visual effect ) {
-		scene.effects.add( effect );
+		if (scene != null) scene.effects.add( effect );
 	}
 
 	public static void effectOverFog( Visual effect ) {
@@ -1091,7 +1128,7 @@ public class GameScene extends PixelScene {
 		Trap trap = Dungeon.level.traps.get( cell );
 		if (trap != null && trap.visible) {
 			objects.add(trap);
-			names.add(Messages.titleCase( trap.name ));
+			names.add(Messages.titleCase( trap.name() ));
 		}
 
 		if (objects.isEmpty()) {

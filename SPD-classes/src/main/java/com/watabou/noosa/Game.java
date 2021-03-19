@@ -31,6 +31,7 @@ import com.watabou.gltextures.TextureCache;
 import com.watabou.glwrap.Blending;
 import com.watabou.glwrap.Vertexbuffer;
 import com.watabou.input.InputHandler;
+import com.watabou.input.PointerEvent;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
@@ -84,12 +85,11 @@ public class Game implements ApplicationListener {
 		instance = this;
 		this.platform = platform;
 	}
-	
-	private boolean paused;
-	
-	public boolean isPaused(){
-		return paused;
-	}
+
+	//FIXME this is a temporary workaround to improve start times on android (first frame is 'cheated' and only renders a black screen)
+	//this is partly to improve stats on google play, and partly to try and diagnose what the cause of slow loading times is
+	//ultimately once the cause is found it should be fixed and this should no longer be needed
+	private boolean justResumed = true;
 	
 	@Override
 	public void create() {
@@ -140,6 +140,18 @@ public class Game implements ApplicationListener {
 	
 	@Override
 	public void render() {
+		//prevents weird rare cases where the app is running twice
+		if (instance != this){
+			finish();
+			return;
+		}
+
+		if (justResumed){
+			Gdx.gl.glClear(Gdx.gl.GL_COLOR_BUFFER_BIT);
+			justResumed = false;
+			return;
+		}
+
 		NoosaScript.get().resetCamera();
 		NoosaScriptNoLighting.get().resetCamera();
 		Gdx.gl.glDisable(Gdx.gl.GL_SCISSOR_TEST);
@@ -153,7 +165,7 @@ public class Game implements ApplicationListener {
 	
 	@Override
 	public void pause() {
-		paused = true;
+		PointerEvent.clearPointerEvents();
 		
 		if (scene != null) {
 			scene.onPause();
@@ -164,7 +176,7 @@ public class Game implements ApplicationListener {
 	
 	@Override
 	public void resume() {
-		paused = false;
+		justResumed = true;
 	}
 	
 	public void finish(){

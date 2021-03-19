@@ -362,10 +362,12 @@ public class DwarfKing extends Mob {
 			super.damage(dmg, src);
 			return;
 		} else if (phase == 3 && !(src instanceof Viscosity.DeferedDamage)){
-			Viscosity.DeferedDamage deferred = Buff.affect( this, Viscosity.DeferedDamage.class );
-			deferred.prolong( dmg );
+			if (dmg >= 0) {
+				Viscosity.DeferedDamage deferred = Buff.affect( this, Viscosity.DeferedDamage.class );
+				deferred.prolong( dmg );
 
-			sprite.showStatus( CharSprite.WARNING, Messages.get(Viscosity.class, "deferred", dmg) );
+				sprite.showStatus( CharSprite.WARNING, Messages.get(Viscosity.class, "deferred", dmg) );
+			}
 			return;
 		}
 		int preHP = HP;
@@ -535,7 +537,7 @@ public class DwarfKing extends Mob {
 					}
 				} else {
 					Char ch = Actor.findChar(pos);
-					ch.damage(Random.NormalIntRange(20, 40), summon);
+					ch.damage(Random.NormalIntRange(20, 40), target);
 					if (((DwarfKing)target).phase == 2){
 						target.damage(target.HT/12, new KingDamager());
 					}

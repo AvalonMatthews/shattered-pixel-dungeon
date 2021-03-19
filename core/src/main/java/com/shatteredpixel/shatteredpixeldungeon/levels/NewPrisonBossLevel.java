@@ -338,6 +338,12 @@ public class NewPrisonBossLevel extends Level {
 		}
 		addVisuals(); //this also resets existing visuals
 		traps.clear();
+
+		for (CustomTilemap t : customTiles){
+			if (t instanceof FadingTraps){
+				((FadingTraps) t).remove();
+			}
+		}
 		
 		GameScene.resetMap();
 		Dungeon.observe();
@@ -462,7 +468,7 @@ public class NewPrisonBossLevel extends Level {
 				for (Mob m : allies){
 					do{
 						m.pos = randomTenguCellPos();
-					} while (findMob(m.pos) != null);
+					} while (findMob(m.pos) != null || m.pos == Dungeon.hero.pos);
 					if (m.sprite != null) m.sprite.place(m.pos);
 					mobs.add(m);
 				}
@@ -546,16 +552,16 @@ public class NewPrisonBossLevel extends Level {
 		traps.clear();
 		Painter.fill(this, tenguCell, 1, Terrain.EMPTY);
 		buildFlagMaps();
-		
-	}
-	
-	public void placeTrapsInTenguCell(float fill){
 
 		for (CustomTilemap vis : customTiles){
 			if (vis instanceof FadingTraps){
 				((FadingTraps) vis).remove();
 			}
 		}
+		
+	}
+	
+	public void placeTrapsInTenguCell(float fill){
 		
 		Point tenguPoint = cellToPoint(tengu.pos);
 		Point heroPoint = cellToPoint(Dungeon.hero.pos);
@@ -689,7 +695,7 @@ public class NewPrisonBossLevel extends Level {
 		public String name(int tileX, int tileY) {
 			int cell = (this.tileX+tileX) + Dungeon.level.width()*(this.tileY+tileY);
 			if (Dungeon.level.traps.get(cell) != null){
-				return Messages.titleCase(Dungeon.level.traps.get(cell).name);
+				return Messages.titleCase(Dungeon.level.traps.get(cell).name());
 			}
 			return super.name(tileX, tileY);
 		}

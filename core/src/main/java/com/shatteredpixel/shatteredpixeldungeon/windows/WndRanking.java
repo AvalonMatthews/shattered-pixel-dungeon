@@ -27,16 +27,18 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BadgesGrid;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BadgesList;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemSlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
-import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
+import com.shatteredpixel.shatteredpixeldungeon.ui.TalentsPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -44,6 +46,7 @@ import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
+import com.watabou.noosa.ui.Component;
 
 import java.util.Locale;
 
@@ -155,23 +158,49 @@ public class WndRanking extends WndTabbed {
 	
 	private class StatsTab extends Group {
 
-		private int GAP	= 5;
+		private int GAP	= 4;
 		
 		public StatsTab() {
 			super();
-
-			if (Dungeon.challenges > 0) GAP--;
 			
 			String heroClass = Dungeon.hero.className();
 			
 			IconTitle title = new IconTitle();
 			title.icon( HeroSprite.avatar( Dungeon.hero.heroClass, Dungeon.hero.tier() ) );
 			title.label( Messages.get(this, "title", Dungeon.hero.lvl, heroClass ).toUpperCase( Locale.ENGLISH ) );
-			title.color(Window.SHPX_COLOR);
+			title.color(Window.TITLE_COLOR);
 			title.setRect( 0, 0, WIDTH, 0 );
 			add( title );
 			
 			float pos = title.bottom() + GAP;
+
+			RedButton btnTalents = new RedButton( Messages.get(this, "talents") ){
+				@Override
+				protected void onClick() {
+					//removes talents from upper tiers
+					int tiers = 1;
+					if (Dungeon.hero.lvl >= 6) tiers++;
+					if (Dungeon.hero.lvl >= 12 && Dungeon.hero.subClass != HeroSubClass.NONE) tiers++;
+					while (Dungeon.hero.talents.size() > tiers){
+						Dungeon.hero.talents.remove(Dungeon.hero.talents.size()-1);
+					}
+					Game.scene().addToFront( new Window(){
+						{
+							TalentsPane p = new TalentsPane(false);
+							add(p);
+							p.setPos(0, 0);
+							p.setSize(120, p.content().height());
+							resize((int)p.width(), (int)p.height());
+							p.setPos(0, 0);
+						}
+					});
+				}
+			};
+			btnTalents.icon(Icons.get(Icons.TALENT));
+			btnTalents.setRect( (WIDTH - btnTalents.reqWidth()+2)/2, pos, btnTalents.reqWidth()+2 , 16 );
+			add(btnTalents);
+
+			pos = btnTalents.bottom();
 
 			if (Dungeon.challenges > 0) {
 				RedButton btnChallenges = new RedButton( Messages.get(this, "challenges") ) {
@@ -180,11 +209,15 @@ public class WndRanking extends WndTabbed {
 						Game.scene().add( new WndChallenges( Dungeon.challenges, false ) );
 					}
 				};
-				float btnW = btnChallenges.reqWidth() + 2;
-				btnChallenges.setRect( (WIDTH - btnW)/2, pos, btnW , btnChallenges.reqHeight() + 2 );
+
+				btnChallenges.icon(Icons.get(Icons.CHALLENGE_ON));
+				btnChallenges.setSize( btnChallenges.reqWidth()+2, 16 );
 				add( btnChallenges );
 
-				pos = btnChallenges.bottom();
+				float left = (WIDTH - btnTalents.width() - btnChallenges.width())/3f;
+
+				btnTalents.setPos(left, btnTalents.top());
+				btnChallenges.setPos(btnTalents.right() + left, btnTalents.top());
 			}
 
 			pos += GAP;
@@ -282,11 +315,15 @@ public class WndRanking extends WndTabbed {
 			super();
 			
 			camera = WndRanking.this.camera;
-			
-			ScrollPane list = new BadgesList( false );
-			add( list );
-			
-			list.setSize( WIDTH, HEIGHT );
+
+			Component badges;
+			if (Badges.unlocked(false) <= 7){
+				badges = new BadgesList(false);
+			} else {
+				badges = new BadgesGrid(false);
+			}
+			add(badges);
+			badges.setSize( WIDTH, HEIGHT );
 		}
 	}
 

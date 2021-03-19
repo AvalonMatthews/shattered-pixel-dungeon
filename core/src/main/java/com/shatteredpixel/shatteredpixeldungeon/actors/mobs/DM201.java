@@ -63,8 +63,7 @@ public class DM201 extends DM200 {
 			Dungeon.level.updateFieldOfView( this, fieldOfView );
 		}
 
-		GameScene.add(Blob.seed(pos, 0, CorrosiveGas.class));
-		if (state == HUNTING && enemy != null && enemySeen
+		if (paralysed <= 0 && state == HUNTING && enemy != null && enemySeen
 				&& threatened && !Dungeon.level.adjacent(pos, enemy.pos) && fieldOfView[enemy.pos]){
 			enemySeen = enemy.isAlive() && fieldOfView[enemy.pos] && enemy.invisible <= 0;
 			if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
@@ -126,7 +125,7 @@ public class DM201 extends DM200 {
 		int ofs;
 		do {
 			ofs = PathFinder.NEIGHBOURS8[Random.Int(8)];
-		} while (Dungeon.level.solid[pos + ofs]);
+		} while (Dungeon.level.solid[pos + ofs] && !Dungeon.level.passable[pos + ofs]);
 		Dungeon.level.drop( new MetalShard(), pos + ofs ).sprite.drop( pos );
 	}
 
